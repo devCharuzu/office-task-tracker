@@ -34,6 +34,12 @@
 </div>
 
 <script>
+
+    const session = JSON.parse(localStorage.getItem('office_session'));
+if (!session) {
+    window.location.href = "index.html"; // Kick out unauthorized users
+}
+// Use 'session.name' or 'session.id' to show their specific data
     const API_URL = "YOUR_APPS_SCRIPT_URL";
 
     // SESSION CHECK: If already logged in, redirect
