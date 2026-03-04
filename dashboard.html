@@ -90,6 +90,25 @@
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
 
+    async function sendData(payload) {
+    try {
+        const response = await fetch(API_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', // Critical: Bypasses CORS blocks
+            headers: { 'Content-Type': 'text/plain' }, 
+            body: JSON.stringify(payload) 
+        });
+        
+        // Since 'no-cors' doesn't let us read the response, 
+        // we use a slight delay before reloading to give the server time.
+        alert("Action processed successfully!");
+        setTimeout(() => location.reload(), 500);
+        
+    } catch (e) {
+        alert("Connection Error. Please try again.");
+    }
+}
+
     // 1. Correct Security Check for Director
     const session = JSON.parse(localStorage.getItem('office_session'));
 
