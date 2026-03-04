@@ -79,8 +79,7 @@
                                 <th>STATUS</th>
                             </tr>
                         </thead>
-                        <tbody id="taskTableBody">
-                            </tbody>
+                        <tbody id="taskTableBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -90,20 +89,14 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
-   // 1. Security Check (Place at the top of your <script>)
-const session = JSON.parse(localStorage.getItem('office_session'));
 
-// If no session exists, or the user is a Director trying to access the Employee page
-if (!session || session.role === "Director") {
-    window.location.href = "index.html"; 
-}
+    // 1. Correct Security Check for Director
+    const session = JSON.parse(localStorage.getItem('office_session'));
 
-// 2. Display Employee Info
-document.getElementById('userName').innerText = session.name;
-document.getElementById('userDesignation').innerText = session.designation;
-if(session.profilePic) {
-    document.getElementById('profileImg').src = session.profilePic;
-}
+    // Check if the user is NOT a Director, send them back
+    if (!session || session.role !== "Director") {
+        window.location.href = "index.html"; 
+    }
 
     let allUsers = [];
 
@@ -135,7 +128,6 @@ if(session.profilePic) {
     function renderMonitor(tasks) {
         const tbody = document.getElementById('taskTableBody');
         tbody.innerHTML = tasks.reverse().map(t => {
-            // Find user profile pic from the users list
             const user = allUsers.find(u => String(u.id) === String(t.EmployeeID));
             const pic = user?.profilePic || 'https://via.placeholder.com/30';
 
@@ -176,7 +168,7 @@ if(session.profilePic) {
         }
 
         const payload = {
-            action: "CREATE", // Ensure your Apps Script doPost handles "CREATE"
+            action: "CREATE",
             taskId: "T-" + Math.floor(Math.random() * 9000 + 1000),
             title: document.getElementById('title').value,
             empId: document.getElementById('empSelect').value,
@@ -186,9 +178,18 @@ if(session.profilePic) {
             fileData, fileName, fileType
         };
 
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-        alert("Task Assigned Successfully!");
-        location.reload();
+        try {
+            const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await response.text();
+            if (result === "SUCCESS") {
+                alert("Task Assigned Successfully!");
+                location.reload();
+            }
+        } catch(e) {
+            alert("Error connecting to server.");
+            btn.disabled = false;
+            btn.innerText = "Dispatch Task";
+        }
     };
 
     function logout() { localStorage.clear(); window.location.href = "index.html"; }
