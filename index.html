@@ -3,149 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Director Dashboard</title>
+    <title>Office Portal | Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #f4f7f6; font-family: sans-serif; }
-        .card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-        .status-Assigned { color: #856404; background: #fff3cd; padding: 4px 8px; border-radius: 5px; }
-        .status-Received { color: #0c5460; background: #d1ecf1; padding: 4px 8px; border-radius: 5px; }
-        .status-Completed { color: #155724; background: #d4edda; padding: 4px 8px; border-radius: 5px; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100vh; display: flex; align-items: center; }
+        .auth-card { width: 100%; max-width: 400px; border: none; border-radius: 15px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-<div class="container py-5">
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card p-4">
-                <h4 class="mb-3">Assign Task</h4>
-                <form id="taskForm">
-                    <div class="mb-3">
-                        <label class="form-label small">Task Title</label>
-                        <input type="text" id="title" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small">1. Office Designation</label>
-                        <select id="designation" class="form-select" onchange="filterEmployees()" required>
-                            <option value="">-- Select Office --</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Finance">Finance</option>
-                            <option value="HR">HR</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small">2. Employee</label>
-                        <select id="empSelect" class="form-select" disabled required>
-                            <option value="">-- Select Office First --</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small">Instructions</label>
-                        <textarea id="instructions" class="form-control" rows="2"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small">Attachment</label>
-                        <input type="file" id="fileInput" class="form-control">
-                    </div>
-                    <button type="submit" id="submitBtn" class="btn btn-primary w-100">Create Task</button>
-                </form>
-            </div>
+<div class="container">
+    <div class="card auth-card shadow-lg mx-auto p-4">
+        <div id="loginBox">
+            <h3 class="text-center fw-bold mb-4">Welcome Back</h3>
+            <input type="text" id="userID" class="form-control mb-3" placeholder="Employee ID">
+            <input type="password" id="userPass" class="form-control mb-3" placeholder="Password">
+            <button onclick="login()" class="btn btn-primary w-100 mb-3">Login</button>
+            <p class="text-center small">First time? <a href="#" onclick="toggleAuth()">Register Account</a></p>
         </div>
 
-        <div class="col-md-8">
-            <div class="card p-4">
-                <div class="d-flex justify-content-between mb-3">
-                    <h4>Task Monitor</h4>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="loadData()">Refresh</button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table small">
-                        <thead>
-                            <tr>
-                                <th>Task</th>
-                                <th>Assigned To</th>
-                                <th>Status</th>
-                                <th>File</th>
-                            </tr>
-                        </thead>
-                        <tbody id="taskTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
+        <div id="registerBox" class="hidden">
+            <h3 class="text-center fw-bold mb-4">Set Password</h3>
+            <p class="text-muted small text-center">Enter your ID provided by the office to set your private password.</p>
+            <input type="text" id="regID" class="form-control mb-3" placeholder="Employee ID">
+            <input type="password" id="regPass" class="form-control mb-3" placeholder="Create New Password">
+            <button onclick="register()" class="btn btn-success w-100 mb-3">Save & Activate</button>
+            <p class="text-center small"><a href="#" onclick="toggleAuth()">Back to Login</a></p>
         </div>
     </div>
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec"; 
-    let allUsers = [];
+    const API_URL = "YOUR_APPS_SCRIPT_URL";
 
-    async function loadData() {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        allUsers = data.users;
-        renderTasks(data.tasks);
-    }
-
-    function filterEmployees() {
-        const office = document.getElementById('designation').value;
-        const select = document.getElementById('empSelect');
-        select.innerHTML = '<option value="">-- Select Employee --</option>';
-        const filtered = allUsers.filter(u => u.designation === office);
-        filtered.forEach(u => {
-            const opt = document.createElement('option');
-            opt.value = u.id;
-            opt.textContent = u.name;
-            select.appendChild(opt);
-        });
-        select.disabled = filtered.length === 0;
-    }
-
-    function renderTasks(tasks) {
-        document.getElementById('taskTableBody').innerHTML = tasks.map(t => `
-            <tr>
-                <td><strong>${t.Title}</strong></td>
-                <td>${t.EmployeeName}<br><span class="text-muted small">${t.Designation}</span></td>
-                <td><span class="status-${t.Status}">${t.Status}</span></td>
-                <td>${t.FileLink !== "No File" ? `<a href="${t.FileLink}" target="_blank">View</a>` : 'None'}</td>
-            </tr>
-        `).join('');
-    }
-
-    document.getElementById('taskForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true; btn.innerText = "Processing...";
-
-        const file = document.getElementById('fileInput').files[0];
-        let fileData = null, fileName = "", fileType = "";
-
-        if (file) {
-            fileData = await new Promise(r => {
-                const reader = new FileReader();
-                reader.onload = () => r(reader.result.split(',')[1]);
-                reader.readAsDataURL(file);
-            });
-            fileName = file.name; fileType = file.type;
-        }
-
-        const payload = {
-            action: "CREATE",
-            taskId: "T" + Date.now(),
-            title: document.getElementById('title').value,
-            empId: document.getElementById('empSelect').value,
-            empName: document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text,
-            designation: document.getElementById('designation').value,
-            instructions: document.getElementById('instructions').value,
-            fileData, fileName, fileType
-        };
-
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-        alert("Success!");
-        location.reload();
+    // SESSION CHECK: If already logged in, redirect
+    window.onload = () => {
+        const session = JSON.parse(localStorage.getItem('office_session'));
+        if (session) redirect(session.role);
     };
 
-    loadData();
+    function toggleAuth() {
+        document.getElementById('loginBox').classList.toggle('hidden');
+        document.getElementById('registerBox').classList.toggle('hidden');
+    }
+
+    async function login() {
+        const id = document.getElementById('userID').value;
+        const pass = document.getElementById('userPass').value;
+        
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        const user = data.users.find(u => u.id === id && u.password === pass);
+
+        if (user) {
+            localStorage.setItem('office_session', JSON.stringify(user));
+            redirect(user.role);
+        } else {
+            alert("Invalid Credentials");
+        }
+    }
+
+    async function register() {
+        const id = document.getElementById('regID').value;
+        const pass = document.getElementById('regPass').value;
+        
+        // This sends the new password to the Google Sheet
+        await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "REGISTER", id: id, pass: pass })
+        });
+        alert("Account Activated! You can now login.");
+        toggleAuth();
+    }
+
+    function redirect(role) {
+        window.location.href = (role === "Director") ? "director.html" : "dashboard.html";
+    }
 </script>
 </body>
 </html>
