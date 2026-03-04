@@ -1,82 +1,131 @@
-<script>
-    const API_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE"; 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Director Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f4f7f9; font-family: 'Inter', sans-serif; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .status-badge { font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; font-weight: bold; }
+        .bg-Assigned { background: #fff3cd; color: #856404; }
+        .bg-Received { background: #d1ecf1; color: #0c5460; }
+        .bg-Completed { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-dark bg-primary shadow-sm mb-4">
+    <div class="container">
+        <span class="navbar-brand fw-bold">Director Control</span>
+        <button onclick="logout()" class="btn btn-light btn-sm fw-bold">Logout</button>
+    </div>
+</nav>
 
-    // --- 1. SECURITY & SESSION CHECK ---
+<div class="container">
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card p-4 h-100">
+                <h5 class="fw-bold mb-3">Assign New Task</h5>
+                <form id="taskForm">
+                    <input type="text" id="title" class="form-control mb-3" placeholder="Task Title" required>
+                    <select id="designation" class="form-select mb-3" onchange="filterEmployees()" required>
+                        <option value="">-- Select Office --</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Finance">Finance</option>
+                        <option value="HR">HR</option>
+                        <option value="Operations">Operations</option>
+                    </select>
+                    <select id="empSelect" class="form-select mb-3" disabled required>
+                        <option value="">-- Choose Employee --</option>
+                    </select>
+                    <textarea id="instructions" class="form-control mb-3" rows="3" placeholder="Specific Instructions"></textarea>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Attach Reference File</label>
+                        <input type="file" id="fileInput" class="form-control">
+                    </div>
+                    <button type="submit" id="submitBtn" class="btn btn-primary w-100 py-2 fw-bold">Assign Task</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-8 mb-4">
+            <div class="card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold m-0">Live Task Monitor</h5>
+                    <button onclick="loadData()" class="btn btn-sm btn-outline-primary">Refresh</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Task Details</th>
+                                <th>Assignee</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
+
+    // Security Guard
     const session = JSON.parse(localStorage.getItem('office_session'));
-    if (!session || session.role !== "Director") {
-        window.location.href = "index.html"; 
-    }
+    if (!session || session.role !== "Director") window.location.href = "index.html";
 
     let allUsers = [];
 
-    // --- 2. LOAD DATA FROM GOOGLE SHEETS ---
     async function loadData() {
-        try {
-            const res = await fetch(API_URL);
-            const data = await res.json();
-            allUsers = data.users;
-            renderTasks(data.tasks);
-        } catch (err) {
-            console.error("Failed to load data:", err);
-        }
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        allUsers = data.users;
+        renderTasks(data.tasks);
     }
 
-    // --- 3. FILTER EMPLOYEES BY OFFICE ---
     function filterEmployees() {
         const office = document.getElementById('designation').value;
         const select = document.getElementById('empSelect');
         select.innerHTML = '<option value="">-- Select Employee --</option>';
-        
         const filtered = allUsers.filter(u => u.designation === office && u.role !== "Director");
-        
-        if (filtered.length > 0) {
-            filtered.forEach(u => {
-                let opt = document.createElement('option');
-                opt.value = u.id;
-                opt.textContent = u.name;
-                select.appendChild(opt);
-            });
-            select.disabled = false;
-        } else {
-            select.disabled = true;
-        }
+        filtered.forEach(u => {
+            let opt = document.createElement('option');
+            opt.value = u.id; opt.textContent = u.name;
+            select.appendChild(opt);
+        });
+        select.disabled = filtered.length === 0;
     }
 
-    // --- 4. RENDER THE MONITOR TABLE ---
     function renderTasks(tasks) {
-        const tbody = document.getElementById('taskTableBody');
-        tbody.innerHTML = tasks.map(t => `
+        document.getElementById('taskTableBody').innerHTML = tasks.map(t => `
             <tr>
-                <td>
-                    <div class="fw-bold">${t.Title}</div>
-                    <div class="text-muted small">${t.Instructions.substring(0, 30)}...</div>
-                </td>
+                <td><strong>${t.Title}</strong><br><small class="text-muted">${t.TaskID}</small></td>
                 <td>${t.EmployeeName}</td>
-                <td><span class="badge ${t.Status === 'Completed' ? 'bg-success' : 'bg-warning text-dark'}">${t.Status}</span></td>
-                <td>${t.FileLink !== "No File" ? `<a href="${t.FileLink}" target="_blank">📎</a>` : '-'}</td>
+                <td><span class="status-badge bg-${t.Status}">${t.Status}</span></td>
             </tr>
         `).join('');
     }
 
-    // --- 5. TASK CREATION LOGIC (THE FETCH PART) ---
     document.getElementById('taskForm').onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.innerText = "Uploading Task...";
+        btn.disabled = true; btn.innerText = "Processing...";
 
         const file = document.getElementById('fileInput').files[0];
         let fileData = null, fileName = "", fileType = "";
 
-        // Convert file to Base64 if one is selected
         if (file) {
-            fileData = await new Promise((resolve) => {
+            fileData = await new Promise(r => {
                 const reader = new FileReader();
-                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onload = () => r(reader.result.split(',')[1]);
                 reader.readAsDataURL(file);
             });
-            fileName = file.name;
-            fileType = file.type;
+            fileName = file.name; fileType = file.type;
         }
 
         const payload = {
@@ -87,27 +136,16 @@
             empName: document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text,
             designation: document.getElementById('designation').value,
             instructions: document.getElementById('instructions').value,
-            fileData: fileData,
-            fileName: fileName,
-            fileType: fileType
+            fileData, fileName, fileType
         };
 
-        try {
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-            alert("Task Assigned Successfully!");
-            location.reload(); 
-        } catch (err) {
-            alert("Error: " + err);
-            btn.disabled = false;
-            btn.innerText = "Create Task";
-        }
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+        alert("Task Created!");
+        location.reload();
     };
 
-    function logout() {
-        localStorage.clear();
-        window.location.href = "index.html";
-    }
-
-    // Initialize
+    function logout() { localStorage.clear(); window.location.href = "index.html"; }
     loadData();
 </script>
+</body>
+</html>
