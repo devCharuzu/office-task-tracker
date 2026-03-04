@@ -64,6 +64,11 @@
         document.getElementById('registerBox').classList.toggle('hidden');
     }
 
+    function togglePass(id) {
+    const x = document.getElementById(id);
+    x.type = x.type === "password" ? "text" : "password";
+}
+
     async function login() {
         const id = document.getElementById('loginId').value;
         const pass = document.getElementById('loginPass').value;
