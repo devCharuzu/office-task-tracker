@@ -121,31 +121,21 @@
         select.disabled = filtered.length === 0;
     }
 
-    function renderTasks(tasks) {
-        const tbody = document.getElementById('taskTableBody');
-        // Show newest tasks at the top
-        tbody.innerHTML = tasks.reverse().map(t => {
-            // Match the assignee with their profile picture
-            const userMatch = allUsers.find(u => String(u.id) === String(t.EmployeeID));
-            const profileImg = (userMatch && userMatch.profilePic) ? userMatch.profilePic : 'https://via.placeholder.com/32';
+ function renderTasks(tasks) {
+    const tbody = document.getElementById('taskTableBody');
+    // Using the Spread Operator [...] ensures we don't corrupt the original data
+    tbody.innerHTML = [...tasks].reverse().map(t => { 
+        const userMatch = allUsers.find(u => String(u.id) === String(t.EmployeeID));
+        const profileImg = userMatch?.profilePic || 'https://via.placeholder.com/32';
 
-            return `
-                <tr>
-                    <td>
-                        <div class="fw-bold text-dark">${t.Title}</div>
-                        <div class="text-muted small">${t.TaskID}</div>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <img src="${profileImg}" class="mini-pic">
-                            <div class="small fw-semibold">${t.EmployeeName}</div>
-                        </div>
-                    </td>
-                    <td><span class="status-badge bg-${t.Status}">${t.Status}</span></td>
-                </tr>
-            `;
-        }).join('');
-    }
+        return `
+            <tr>
+                <td><div class="fw-bold">${t.Title}</div><small class="text-muted">${t.TaskID}</small></td>
+                <td><img src="${profileImg}" class="mini-pic"> ${t.EmployeeName}</td>
+                <td><span class="status-badge bg-${t.Status}">${t.Status}</span></td>
+            </tr>`;
+    }).join('');
+}
 
     document.getElementById('taskForm').onsubmit = async (e) => {
         e.preventDefault();
