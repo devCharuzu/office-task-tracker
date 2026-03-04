@@ -175,15 +175,15 @@
         }
 
         const payload = {
-            action: "CREATE",
-            taskId: "T" + Date.now(),
-            title: document.getElementById('title').value,
-            empId: document.getElementById('empSelect').value,
-            empName: document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text,
-            designation: document.getElementById('designation').value,
-            instructions: document.getElementById('instructions').value,
-            fileData, fileName, fileType
-        };
+    action: "CREATE",
+    taskId: "T-" + Date.now(),
+    title: document.getElementById('title').value,
+    empId: String(document.getElementById('empSelect').value), // Force string
+    empName: document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text,
+    designation: document.getElementById('designation').value,
+    instructions: document.getElementById('instructions').value,
+    fileData, fileName, fileType
+};
 
         try {
             await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
