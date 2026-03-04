@@ -24,6 +24,10 @@
                 <p class="text-muted mb-4 small">Enter your credentials to access the portal.</p>
                 <input type="text" id="loginId" class="form-control mb-3" placeholder="Employee ID">
                 <input type="password" id="loginPass" class="form-control mb-4" placeholder="Password">
+                <div class="form-check mt-2 text-start">
+    <input class="form-check-input" type="checkbox" onclick="togglePass('loginPass')">
+    <label class="form-check-label small text-muted">Show Password</label>
+</div>
                 <button onclick="login()" id="loginBtn" class="btn btn-primary w-100 mb-3">Sign In</button>
                 <p class="text-center small mb-0">No account? <a href="#" onclick="toggleAuth()" class="text-decoration-none fw-bold">Register Now</a></p>
             </div>
@@ -41,17 +45,12 @@
                     <option value="Operations">Operations</option>
                 </select>
                 <input type="password" id="regPass" class="form-control mb-4" placeholder="Create Password">
-                <button onclick="register()" id="regBtn" class="btn btn-success w-100 mb-3 py-3 border-0 fw-bold">Create Account</button>
-                <p class="text-center small mb-0"><a href="#" onclick="toggleAuth()" class="text-decoration-none fw-bold">Back to Login</a></p>
                 <div class="form-check mt-2 text-start">
-    <input class="form-check-input" type="checkbox" onclick="togglePass('loginPass')">
-    <label class="form-check-label small text-muted">Show Password</label>
-</div>
-
-<div class="form-check mt-2 text-start">
     <input class="form-check-input" type="checkbox" onclick="togglePass('regPass')">
     <label class="form-check-label small text-muted">Show Password</label>
 </div>
+                <button onclick="register()" id="regBtn" class="btn btn-success w-100 mb-3 py-3 border-0 fw-bold">Create Account</button>
+                <p class="text-center small mb-0"><a href="#" onclick="toggleAuth()" class="text-decoration-none fw-bold">Back to Login</a></p>
             </div>
         </div>
     </div>
