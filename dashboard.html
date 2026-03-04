@@ -125,30 +125,21 @@
         select.disabled = filtered.length === 0;
     }
 
-    function renderMonitor(tasks) {
-        const tbody = document.getElementById('taskTableBody');
-        tbody.innerHTML = tasks.reverse().map(t => {
-            const user = allUsers.find(u => String(u.id) === String(t.EmployeeID));
-            const pic = user?.profilePic || 'https://via.placeholder.com/30';
+   function renderTasks(tasks) {
+    const tbody = document.getElementById('taskTableBody');
+    // Using the Spread Operator [...] ensures we don't corrupt the original data
+    tbody.innerHTML = [...tasks].reverse().map(t => { 
+        const userMatch = allUsers.find(u => String(u.id) === String(t.EmployeeID));
+        const profileImg = userMatch?.profilePic || 'https://via.placeholder.com/32';
 
-            return `
+        return `
             <tr>
-                <td>
-                    <div class="fw-bold text-dark">${t.Title}</div>
-                    <div class="text-muted small" style="font-size: 0.75rem;">ID: ${t.TaskID}</div>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <img src="${pic}" class="mini-pic">
-                        <div class="small fw-semibold">${t.EmployeeName}</div>
-                    </div>
-                </td>
-                <td>
-                    <span class="status-badge bg-${t.Status}">${t.Status}</span>
-                </td>
+                <td><div class="fw-bold">${t.Title}</div><small class="text-muted">${t.TaskID}</small></td>
+                <td><img src="${profileImg}" class="mini-pic"> ${t.EmployeeName}</td>
+                <td><span class="status-badge bg-${t.Status}">${t.Status}</span></td>
             </tr>`;
-        }).join('');
-    }
+    }).join('');
+}
 
     document.getElementById('taskForm').onsubmit = async (e) => {
         e.preventDefault();
