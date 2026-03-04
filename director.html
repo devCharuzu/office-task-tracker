@@ -1,57 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Director Control Panel</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-<nav class="navbar navbar-dark bg-dark mb-4">
-    <div class="container">
-        <span class="navbar-brand">Director Dashboard</span>
-        <button onclick="logout()" class="btn btn-outline-light btn-sm">Logout</button>
-    </div>
-</nav>
-
-<div class="container">
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card p-4 shadow-sm">
-                <h5 class="fw-bold">Assign New Task</h5>
-                <form id="taskForm">
-                    <input type="text" id="title" class="form-control mb-2" placeholder="Task Title" required>
-                    <select id="designation" class="form-select mb-2" onchange="filterEmployees()" required>
-                        <option value="">-- Office --</option>
-                        <option value="Admin">Admin</option>
-                        <option value="Finance">Finance</option>
-                        <option value="HR">HR</option>
-                    </select>
-                    <select id="empSelect" class="form-select mb-2" disabled required></select>
-                    <textarea id="instructions" class="form-control mb-2" placeholder="Instructions"></textarea>
-                    <input type="file" id="fileInput" class="form-control mb-3">
-                    <button type="submit" id="submitBtn" class="btn btn-primary w-100">Create Task</button>
-                </form>
-            </div>
-        </div>
-        <div class="col-md-8">
-            <div class="card p-4 shadow-sm">
-                <h5 class="fw-bold">Live Monitor</h5>
-                <div class="table-responsive">
-                    <table class="table small">
-                        <thead><tr><th>Task</th><th>Employee</th><th>Status</th></tr></thead>
-                        <tbody id="taskTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-    const API_URL = "YOUR_APPS_SCRIPT_URL";
+    const API_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE"; 
 
-    // SECURITY GUARD: Check if Director is logged in
+    // --- 1. SECURITY & SESSION CHECK ---
     const session = JSON.parse(localStorage.getItem('office_session'));
     if (!session || session.role !== "Director") {
         window.location.href = "index.html"; 
@@ -59,40 +9,105 @@
 
     let allUsers = [];
 
+    // --- 2. LOAD DATA FROM GOOGLE SHEETS ---
     async function loadData() {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        allUsers = data.users;
-        renderTasks(data.tasks);
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            allUsers = data.users;
+            renderTasks(data.tasks);
+        } catch (err) {
+            console.error("Failed to load data:", err);
+        }
     }
 
+    // --- 3. FILTER EMPLOYEES BY OFFICE ---
     function filterEmployees() {
         const office = document.getElementById('designation').value;
         const select = document.getElementById('empSelect');
-        select.innerHTML = '';
+        select.innerHTML = '<option value="">-- Select Employee --</option>';
+        
         const filtered = allUsers.filter(u => u.designation === office && u.role !== "Director");
-        filtered.forEach(u => {
-            let opt = document.createElement('option');
-            opt.value = u.id; opt.textContent = u.name;
-            select.appendChild(opt);
-        });
-        select.disabled = filtered.length === 0;
+        
+        if (filtered.length > 0) {
+            filtered.forEach(u => {
+                let opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = u.name;
+                select.appendChild(opt);
+            });
+            select.disabled = false;
+        } else {
+            select.disabled = true;
+        }
     }
 
+    // --- 4. RENDER THE MONITOR TABLE ---
     function renderTasks(tasks) {
-        document.getElementById('taskTableBody').innerHTML = tasks.map(t => `
+        const tbody = document.getElementById('taskTableBody');
+        tbody.innerHTML = tasks.map(t => `
             <tr>
-                <td><strong>${t.Title}</strong></td>
+                <td>
+                    <div class="fw-bold">${t.Title}</div>
+                    <div class="text-muted small">${t.Instructions.substring(0, 30)}...</div>
+                </td>
                 <td>${t.EmployeeName}</td>
-                <td><span class="badge bg-secondary">${t.Status}</span></td>
+                <td><span class="badge ${t.Status === 'Completed' ? 'bg-success' : 'bg-warning text-dark'}">${t.Status}</span></td>
+                <td>${t.FileLink !== "No File" ? `<a href="${t.FileLink}" target="_blank">📎</a>` : '-'}</td>
             </tr>
         `).join('');
     }
 
-    function logout() { localStorage.clear(); window.location.href = "index.html"; }
-    
-    // Add the Task Creation fetch logic here (the one used in previous prompts)
+    // --- 5. TASK CREATION LOGIC (THE FETCH PART) ---
+    document.getElementById('taskForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerText = "Uploading Task...";
+
+        const file = document.getElementById('fileInput').files[0];
+        let fileData = null, fileName = "", fileType = "";
+
+        // Convert file to Base64 if one is selected
+        if (file) {
+            fileData = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(file);
+            });
+            fileName = file.name;
+            fileType = file.type;
+        }
+
+        const payload = {
+            action: "CREATE",
+            taskId: "T" + Date.now(),
+            title: document.getElementById('title').value,
+            empId: document.getElementById('empSelect').value,
+            empName: document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text,
+            designation: document.getElementById('designation').value,
+            instructions: document.getElementById('instructions').value,
+            fileData: fileData,
+            fileName: fileName,
+            fileType: fileType
+        };
+
+        try {
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            alert("Task Assigned Successfully!");
+            location.reload(); 
+        } catch (err) {
+            alert("Error: " + err);
+            btn.disabled = false;
+            btn.innerText = "Create Task";
+        }
+    };
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = "index.html";
+    }
+
+    // Initialize
     loadData();
 </script>
-</body>
-</html>
