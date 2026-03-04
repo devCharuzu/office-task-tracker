@@ -74,10 +74,12 @@
             const res = await fetch(API_URL);
             const data = await res.json();
             
-          // This is the bulletproof way to match IDs
-const myTasks = data.tasks.filter(t => 
-    String(t.EmployeeID).trim().toLowerCase() === String(session.id).trim().toLowerCase()
-);
+// This converts both sides to clean strings to ensure '001' matches '001'
+const myTasks = data.tasks.filter(t => {
+    const dbID = String(t.EmployeeID).trim();
+    const sessionID = String(session.id).trim();
+    return dbID === sessionID;
+});
             
             if (myTasks.length === 0) {
                 document.getElementById('noTasks').classList.remove('d-none');
