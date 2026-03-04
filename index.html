@@ -33,14 +33,22 @@
             <div class="card p-4">
                 <h5 class="fw-bold mb-3">Assign New Task</h5>
                 <form id="taskForm">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Task Title</label>
-                        <input type="text" id="title" class="form-control" placeholder="e.g. Monthly Report" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Assign to (Employee ID)</label>
-                        <input type="text" id="empId" class="form-control" placeholder="e.g. 2024-001" required>
-                    </div>
+                   <div class="mb-3">
+    <label class="form-label small fw-bold">1. Select Office Designation</label>
+    <select id="designation" class="form-select" onchange="filterEmployees()">
+        <option value="">-- Select Office --</option>
+        <option value="Admin">Admin</option>
+        <option value="Finance">Finance</option>
+        <option value="HR">HR</option>
+    </select>
+</div>
+
+<div class="mb-3">
+    <label class="form-label small fw-bold">2. Select Employee</label>
+    <select id="empSelect" class="form-select" disabled>
+        <option value="">-- Select Designation First --</option>
+    </select>
+</div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Designation</label>
                         <select id="designation" class="form-select">
@@ -90,7 +98,44 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec"; 
+let allUsers = []; // We will store the users here
 
+async function loadData() {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    
+    allUsers = data.users; // Store the user list
+    renderTaskTable(data.tasks); // Function to show the tasks
+}
+
+function filterEmployees() {
+    const selectedOffice = document.getElementById('designation').value;
+    const empSelect = document.getElementById('empSelect');
+    
+    // Clear previous options
+    empSelect.innerHTML = '<option value="">-- Select Employee --</option>';
+    
+    if (selectedOffice === "") {
+        empSelect.disabled = true;
+        return;
+    }
+
+    // Filter users who match the selected designation
+    const filteredUsers = allUsers.filter(u => u.designation === selectedOffice);
+
+    if (filteredUsers.length > 0) {
+        filteredUsers.forEach(user => {
+            const opt = document.createElement('option');
+            opt.value = user.id;
+            opt.textContent = `${user.name} (${user.id})`;
+            empSelect.appendChild(opt);
+        });
+        empSelect.disabled = false;
+    } else {
+        empSelect.innerHTML = '<option value="">No employees found in this office</option>';
+        empSelect.disabled = true;
+    }
+}
     // Handle Form Submission
     document.getElementById('taskForm').onsubmit = async (e) => {
         e.preventDefault();
@@ -135,7 +180,7 @@
 
     // Auto-refresh every 60 seconds
     setInterval(loadTasks, 60000);
-    loadTasks();
+loadData();
 </script>
 </body>
 </html>
