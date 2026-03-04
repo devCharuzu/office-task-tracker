@@ -90,10 +90,20 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
-    const session = JSON.parse(localStorage.getItem('office_session'));
+   // 1. Security Check (Place at the top of your <script>)
+const session = JSON.parse(localStorage.getItem('office_session'));
 
-    // Security Guard: Role Check
-    if (!session || session.role !== "Director") window.location.href = "index.html";
+// If no session exists, or the user is a Director trying to access the Employee page
+if (!session || session.role === "Director") {
+    window.location.href = "index.html"; 
+}
+
+// 2. Display Employee Info
+document.getElementById('userName').innerText = session.name;
+document.getElementById('userDesignation').innerText = session.designation;
+if(session.profilePic) {
+    document.getElementById('profileImg').src = session.profilePic;
+}
 
     let allUsers = [];
 
