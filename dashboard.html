@@ -3,154 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Portal</title>
+    <title>Director Control | Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        body { background: #f8fafc; font-family: 'Inter', sans-serif; }
-        .nav-custom { background: white; border-bottom: 1px solid #e2e8f0; }
-        .badge-notify { position: absolute; top: 0; right: 0; padding: 3px 6px; border-radius: 50%; font-size: 10px; }
-        .task-card { border: none; border-radius: 12px; transition: 0.2s; }
-        .task-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-
-
-        /* Add this inside your existing <style> tag */
-    .profile-card { border-radius: 20px; transition: 0.3s; }
-    .profile-img { 
-        width: 120px; height: 120px; 
-        object-fit: cover; border-radius: 50%; 
-        border: 4px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
-    }
-    .nav-profile-img { width: 35px; height: 35px; object-fit: cover; border-radius: 50%; }
-    .task-thumb { 
-        width: 100%; height: 160px; 
-        object-fit: cover; border-radius: 10px; 
-        margin-bottom: 15px; background: #f0f0f0;
-        border: 1px solid #eee;
-    }
+        body { background: #f0f2f5; font-family: 'Inter', sans-serif; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .nav-custom { background: #1e293b; color: white; }
+        .mini-pic { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; margin-right: 8px; border: 1px solid #ddd; }
+        .status-badge { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
+        .bg-Assigned { background: #fef3c7; color: #92400e; }
+        .bg-Received { background: #e0f2fe; color: #075985; }
+        .bg-Completed { background: #dcfce7; color: #166534; }
+        .table-responsive { max-height: 600px; overflow-y: auto; }
     </style>
 </head>
 <body>
 
-<nav class="navbar nav-custom sticky-top mb-4">
-    <div class="container d-flex justify-content-between">
-        <a class="navbar-brand fw-bold text-primary" href="#">OFFICE PRO</a>
-        <div class="d-flex align-items-center">
-            <div class="position-relative me-3" style="cursor: pointer;" onclick="scrollToTasks()">
-                <i class="bi bi-bell fs-4"></i>
-                <span id="notifBadge" class="badge badge-notify bg-danger hidden">0</span>
-            </div>
-            <div class="dropdown">
-                <button class="btn btn-light rounded-circle" type="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle fs-5"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                    <li><h6 class="dropdown-header" id="dropName">User</h6></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">Edit Profile</a></li>
-                    <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Logout</a></li>
-                </ul>
-            </div>
-        </div>
+<nav class="navbar nav-custom shadow-sm mb-4">
+    <div class="container">
+        <span class="navbar-brand fw-bold text-white"><i class="bi bi-shield-lock me-2"></i>Director Panel</span>
+        <button onclick="logout()" class="btn btn-outline-light btn-sm rounded-pill px-3">Logout</button>
     </div>
 </nav>
 
 <div class="container">
-    <div id="mainContent">
-        </div>
-</div>
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card p-4 sticky-lg-top" style="top: 90px;">
+                <h5 class="fw-bold mb-3">Assign New Task</h5>
+                <form id="taskForm">
+                    <input type="text" id="title" class="form-control mb-3" placeholder="Task Title" required>
+                    
+                    <label class="small fw-bold text-muted">Target Office</label>
+                    <select id="designation" class="form-select mb-3" onchange="filterEmployees()" required>
+                        <option value="">-- Select Office --</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Finance">Finance</option>
+                        <option value="HR">HR</option>
+                        <option value="Operations">Operations</option>
+                    </select>
 
-<div class="modal fade" id="profileModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header">
-                <h5 class="fw-bold">Update Profile</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <label class="small fw-bold text-muted">Assign To</label>
+                    <select id="empSelect" class="form-select mb-3" disabled required>
+                        <option value="">-- Select Employee --</option>
+                    </select>
+
+                    <textarea id="instructions" class="form-control mb-3" rows="3" placeholder="Instructions..."></textarea>
+                    
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Attachment (Image/PDF)</label>
+                        <input type="file" id="fileInput" class="form-control">
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
+                        <i class="bi bi-send-plus me-2"></i>Dispatch Task
+                    </button>
+                </form>
             </div>
-            <div class="modal-body">
-                <label class="small fw-bold mt-2">Profile Picture</label>
-<input type="file" id="picInput" class="form-control mb-3" accept="image/*">
-                <label class="small fw-bold">Full Name</label>
-                <input type="text" id="editName" class="form-control mb-3">
-                <label class="small fw-bold">Designation</label>
-                <input type="text" id="editDesignation" class="form-control mb-3" readonly>
-                <label class="small fw-bold">New Password</label>
-                <input type="password" id="editPass" class="form-control" placeholder="Leave blank to keep current">
-            </div>
-            <div class="modal-footer">
-                <button onclick="updateProfile()" class="btn btn-primary w-100 fw-bold">Save Changes</button>
+        </div>
+
+        <div class="col-lg-8 mb-4">
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold m-0 text-dark">Live Task Tracker</h5>
+                    <button onclick="loadData()" class="btn btn-sm btn-light border"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr class="small text-muted">
+                                <th>TASK DETAILS</th>
+                                <th>ASSIGNEE</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskTableBody">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
-    let session = JSON.parse(localStorage.getItem('office_session'));
+    const API_URL = "YOUR_APPS_SCRIPT_URL";
+    const session = JSON.parse(localStorage.getItem('office_session'));
 
-    async function loadDashboard() {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        
-        // 1. Update session info from latest data
-        const freshUser = data.users.find(u => u.id == session.id);
-        if(freshUser) {
-            session = freshUser;
-            localStorage.setItem('office_session', JSON.stringify(session));
-        }
+    // Security Guard: Role Check
+    if (!session || session.role !== "Director") window.location.href = "index.html";
 
-        // 2. Filter tasks
-        const myTasks = data.tasks.filter(t => t.EmployeeID == session.id);
-        
-        // 3. Notification Logic
-        const pending = myTasks.filter(t => t.Status === 'Assigned');
-        const badge = document.getElementById('notifBadge');
-        if(pending.length > 0) {
-            badge.innerText = pending.length;
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
-        }
+    let allUsers = [];
 
-        renderUI(myTasks);
+    async function loadData() {
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            allUsers = data.users;
+            renderMonitor(data.tasks);
+        } catch(e) { console.error("Sync Error:", e); }
     }
 
-    function renderUI(tasks) {
-        const container = document.getElementById('mainContent');
-        const userPic = session.profilePic || 'https://via.placeholder.com/150';
-        document.getElementById('navPic').src = userPic;
-
-        if (tasks.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-5">
-                    <img src="${userPic}" class="profile-img mb-3">
-                    <h3>${session.name}</h3>
-                    <p class="text-muted">No active tasks assigned to you.</p>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#profileModal">Edit Profile</button>
-                </div>`;
-        } else {
-            container.innerHTML = `<h4 class="mb-4">My Tasks</h4><div class="row">` + 
-                tasks.map(t => {
-                    const isImg = t.FileLink && t.FileLink.includes("drive.google.com");
-                    return `
-                    <div class="col-md-6 mb-4">
-                        <div class="card p-3 shadow-sm border-0">
-                            ${isImg ? `<img src="${t.FileLink}" class="task-thumb">` : ''}
-                            <h5>${t.Title}</h5>
-                            <p class="small text-muted">${t.Instructions}</p>
-                            <div class="d-grid gap-2">
-                                ${t.Status === 'Assigned' ? `<button onclick="updateStatus('${t.TaskID}', 'RECEIVE')" class="btn btn-primary btn-sm">Accept</button>` : ''}
-                                ${t.Status === 'Received' ? `<button onclick="updateStatus('${t.TaskID}', 'COMPLETE')" class="btn btn-success btn-sm">Complete</button>` : ''}
-                            </div>
-                        </div>
-                    </div>`;
-                }).join('') + `</div>`;
-        }
+    function filterEmployees() {
+        const office = document.getElementById('designation').value;
+        const select = document.getElementById('empSelect');
+        select.innerHTML = '<option value="">-- Select Employee --</option>';
+        
+        const filtered = allUsers.filter(u => u.designation === office && u.role !== "Director");
+        
+        filtered.forEach(u => {
+            let opt = document.createElement('option');
+            opt.value = u.id; 
+            opt.textContent = u.name;
+            select.appendChild(opt);
+        });
+        select.disabled = filtered.length === 0;
     }
 
-    async function updateProfile() {
-        const file = document.getElementById('picInput').files[0];
+    function renderMonitor(tasks) {
+        const tbody = document.getElementById('taskTableBody');
+        tbody.innerHTML = tasks.reverse().map(t => {
+            // Find user profile pic from the users list
+            const user = allUsers.find(u => String(u.id) === String(t.EmployeeID));
+            const pic = user?.profilePic || 'https://via.placeholder.com/30';
+
+            return `
+            <tr>
+                <td>
+                    <div class="fw-bold text-dark">${t.Title}</div>
+                    <div class="text-muted small" style="font-size: 0.75rem;">ID: ${t.TaskID}</div>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <img src="${pic}" class="mini-pic">
+                        <div class="small fw-semibold">${t.EmployeeName}</div>
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge bg-${t.Status}">${t.Status}</span>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    document.getElementById('taskForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending...';
+
+        const file = document.getElementById('fileInput').files[0];
         let fileData = null, fileName = "", fileType = "";
 
         if (file) {
@@ -163,25 +166,23 @@
         }
 
         const payload = {
-            action: "UPDATE_PROFILE",
-            id: session.id,
-            name: document.getElementById('editName').value,
-            pass: document.getElementById('editPass').value || session.password,
-            fileData, fileName, fileType,
-            existingPic: session.profilePic
+            action: "CREATE", // Ensure your Apps Script doPost handles "CREATE"
+            taskId: "T-" + Math.floor(Math.random() * 9000 + 1000),
+            title: document.getElementById('title').value,
+            empId: document.getElementById('empSelect').value,
+            empName: document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text,
+            designation: document.getElementById('designation').value,
+            instructions: document.getElementById('instructions').value,
+            fileData, fileName, fileType
         };
 
         await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-        alert("Profile Updated!");
+        alert("Task Assigned Successfully!");
         location.reload();
-    }
+    };
 
-    async function updateStatus(taskId, action) {
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, taskId }) });
-        location.reload();
-    }
-
-    loadDashboard();
+    function logout() { localStorage.clear(); window.location.href = "index.html"; }
+    loadData();
 </script>
 </body>
 </html>
