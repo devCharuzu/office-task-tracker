@@ -10,49 +10,67 @@
         body { background: #f0f2f5; font-family: 'Inter', sans-serif; }
         .card { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .nav-custom { background: #0d6efd; color: white; }
-        /* Mini-profile pic for the table */
         .mini-pic { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; border: 1px solid #dee2e6; }
-        .status-badge { font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; font-weight: bold; }
+        .status-badge { font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; font-weight: bold; text-transform: uppercase; }
+        /* Dynamic Status Colors */
         .bg-Assigned { background: #fff3cd; color: #856404; }
         .bg-Received { background: #d1ecf1; color: #0c5460; }
         .bg-Completed { background: #d4edda; color: #155724; }
-        .table-responsive { max-height: 70vh; overflow-y: auto; }
+        .table-responsive { max-height: 75vh; overflow-y: auto; }
+        .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); display:flex; justify-content:center; align-items:center; z-index:9999; }
     </style>
 </head>
 <body>
 
+<div id="loader" class="loading-overlay hidden"><div class="spinner-border text-primary"></div></div>
+
 <nav class="navbar nav-custom shadow-sm mb-4">
     <div class="container">
         <span class="navbar-brand fw-bold"><i class="bi bi-person-workspace me-2"></i>Director Control</span>
-        <button onclick="logout()" class="btn btn-light btn-sm fw-bold rounded-pill px-3">Logout</button>
+        <div class="d-flex align-items-center">
+            <span id="directorName" class="me-3 small opacity-75"></span>
+            <button onclick="logout()" class="btn btn-light btn-sm fw-bold rounded-pill px-3">Logout</button>
+        </div>
     </div>
 </nav>
 
 <div class="container">
     <div class="row">
         <div class="col-lg-4 mb-4">
-            <div class="card p-4">
-                <h5 class="fw-bold mb-3">Assign New Task</h5>
+            <div class="card p-4 sticky-top" style="top: 20px; z-index: 1000;">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">Assign New Task</h5>
                 <form id="taskForm">
-                    <input type="text" id="title" class="form-control mb-3" placeholder="Task Title" required>
-                    
-                    <select id="designation" class="form-select mb-3" onchange="filterEmployees()" required>
-                        <option value="">-- Select Office --</option>
-                        <option value="Admin">Admin</option>
-                        <option value="Finance">Finance</option>
-                        <option value="HR">HR</option>
-                        <option value="Operations">Operations</option>
-                    </select>
-
-                    <select id="empSelect" class="form-select mb-3" disabled required>
-                        <option value="">-- Choose Employee --</option>
-                    </select>
-
-                    <textarea id="instructions" class="form-control mb-3" rows="3" placeholder="Specific Instructions"></textarea>
+                    <div class="mb-3">
+                        <label class="small fw-bold">Task Title</label>
+                        <input type="text" id="title" class="form-control" placeholder="What needs to be done?" required>
+                    </div>
                     
                     <div class="mb-3">
-                        <label class="small fw-bold text-muted">Attach Reference File</label>
-                        <input type="file" id="fileInput" class="form-control">
+                        <label class="small fw-bold">Target Office</label>
+                        <select id="designation" class="form-select" onchange="filterEmployees()" required>
+                            <option value="">-- Select Office --</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Finance">Finance</option>
+                            <option value="HR">HR</option>
+                            <option value="Operations">Operations</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="small fw-bold">Select Assignee</label>
+                        <select id="empSelect" class="form-select" disabled required>
+                            <option value="">-- Choose Employee --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="small fw-bold">Instructions</label>
+                        <textarea id="instructions" class="form-control" rows="3" placeholder="Step-by-step details..."></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="small fw-bold text-muted"><i class="bi bi-paperclip"></i> Reference File (Optional)</label>
+                        <input type="file" id="fileInput" class="form-control form-control-sm">
                     </div>
 
                     <button type="submit" id="submitBtn" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
@@ -64,17 +82,18 @@
 
         <div class="col-lg-8 mb-4">
             <div class="card p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold m-0">Live Task Monitor</h5>
-                    <button onclick="loadData()" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold m-0"><i class="bi bi-activity me-2 text-primary"></i>Live Monitor</h5>
+                    <button onclick="loadData()" class="btn btn-sm btn-outline-secondary rounded-pill"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
                 </div>
                 <div class="table-responsive">
                     <table class="table align-middle">
                         <thead class="table-light text-muted small">
                             <tr>
-                                <th>TASK DETAILS</th>
+                                <th>TASK INFO</th>
                                 <th>ASSIGNEE</th>
                                 <th>STATUS</th>
+                                <th>TIMESTAMP</th>
                             </tr>
                         </thead>
                         <tbody id="taskTableBody">
@@ -89,114 +108,127 @@
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
 
-    async function sendData(payload) {
-    try {
-        const response = await fetch(API_URL, { 
-            method: 'POST', 
-            mode: 'no-cors', // Critical: Bypasses CORS blocks
-            headers: { 'Content-Type': 'text/plain' }, 
-            body: JSON.stringify(payload) 
-        });
-        
-        // Since 'no-cors' doesn't let us read the response, 
-        // we use a slight delay before reloading to give the server time.
-        alert("Action processed successfully!");
-        setTimeout(() => location.reload(), 500);
-        
-    } catch (e) {
-        alert("Connection Error. Please try again.");
-    }
-}
-
-    // Security Guard
+    // Session Verification
     const session = JSON.parse(localStorage.getItem('office_session'));
-    if (!session || session.role !== "Director") window.location.href = "index.html";
+    if (!session || session.role !== "Director") {
+        window.location.href = "index.html";
+    } else {
+        document.getElementById('directorName').textContent = `Admin: ${session.name}`;
+    }
 
     let allUsers = [];
 
+    // Load Data using modern async/await
     async function loadData() {
+        document.getElementById('loader').classList.remove('hidden');
         try {
             const res = await fetch(API_URL);
             const data = await res.json();
             allUsers = data.users;
             renderTasks(data.tasks);
-        } catch(e) { console.error("Load Error:", e); }
+        } catch(e) { 
+            console.error("Fetch Error:", e);
+            alert("Could not load latest data. Check internet.");
+        } finally {
+            document.getElementById('loader').classList.add('hidden');
+        }
     }
 
     function filterEmployees() {
         const office = document.getElementById('designation').value;
         const select = document.getElementById('empSelect');
-        select.innerHTML = '<option value="">-- Select Employee --</option>';
+        select.innerHTML = '<option value="">-- Choose Employee --</option>';
         
-        // Filter by office and exclude the Director from the list
-        const filtered = allUsers.filter(u => u.designation === office && u.role !== "Director");
+        // Match against 'office' key in user object
+        const filtered = allUsers.filter(u => u.office === office && u.role !== "Director");
         
         filtered.forEach(u => {
             let opt = document.createElement('option');
-            opt.value = u.id; // Correct key from Apps Script
+            opt.value = u.id;
             opt.textContent = u.name;
             select.appendChild(opt);
         });
         select.disabled = filtered.length === 0;
     }
 
- function renderTasks(tasks) {
-    const tbody = document.getElementById('taskTableBody');
-    // Using the Spread Operator [...] ensures we don't corrupt the original data
-    tbody.innerHTML = [...tasks].reverse().map(t => { 
-        const userMatch = allUsers.find(u => String(u.id) === String(t.EmployeeID));
-        const profileImg = userMatch?.profilePic || 'https://via.placeholder.com/32';
+    function renderTasks(tasks) {
+        const tbody = document.getElementById('taskTableBody');
+        if (!tasks || tasks.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No tasks assigned yet.</td></tr>';
+            return;
+        }
 
-        return `
-            <tr>
-                <td><div class="fw-bold">${t.Title}</div><small class="text-muted">${t.TaskID}</small></td>
-                <td><img src="${profileImg}" class="mini-pic"> ${t.EmployeeName}</td>
-                <td><span class="status-badge bg-${t.Status}">${t.Status}</span></td>
-            </tr>`;
-    }).join('');
-}
+        tbody.innerHTML = [...tasks].reverse().map(t => { 
+            const userMatch = allUsers.find(u => String(u.id) === String(t.EmployeeID));
+            const profileImg = userMatch?.profilePic || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(t.EmployeeName);
 
+            return `
+                <tr>
+                    <td>
+                        <div class="fw-bold text-dark">${t.Title}</div>
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">ID: ${t.TaskID}</small>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="${profileImg}" class="mini-pic">
+                            <span class="small fw-semibold">${t.EmployeeName}</span>
+                        </div>
+                    </td>
+                    <td><span class="status-badge bg-${t.Status}">${t.Status}</span></td>
+                    <td class="text-muted small">${new Date(t.CreatedTS).toLocaleDateString()}</td>
+                </tr>`;
+        }).join('');
+    }
+
+    // Task Submission
     document.getElementById('taskForm').onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
         btn.disabled = true; 
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Assigning...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Syncing...';
 
         const file = document.getElementById('fileInput').files[0];
         let fileData = null, fileName = "", fileType = "";
 
         if (file) {
-            fileData = await new Promise(r => {
-                const reader = new FileReader();
-                reader.onload = () => r(reader.result.split(',')[1]);
+            const reader = new FileReader();
+            fileData = await new Promise(resolve => {
+                reader.onload = () => resolve(reader.result.split(',')[1]);
                 reader.readAsDataURL(file);
             });
-            fileName = file.name; fileType = file.type;
+            fileName = file.name;
+            fileType = file.type;
         }
 
         const payload = {
-    action: "CREATE",
-    taskId: "T-" + Date.now(),
-    title: document.getElementById('title').value,
-    empId: String(document.getElementById('empSelect').value), // Force string
-    empName: document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text,
-    designation: document.getElementById('designation').value,
-    instructions: document.getElementById('instructions').value,
-    fileData, fileName, fileType
-};
+            action: "CREATE",
+            taskId: "T-" + Math.floor(Math.random() * 100000),
+            title: document.getElementById('title').value,
+            empId: String(document.getElementById('empSelect').value),
+            empName: document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text,
+            office: document.getElementById('designation').value,
+            instructions: document.getElementById('instructions').value,
+            fileData, fileName, fileType
+        };
 
         try {
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-            alert("✅ Task Assigned Successfully!");
+            // Using POST without no-cors to allow for response validation later
+            await fetch(API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify(payload) 
+            });
+            alert("🚀 Task successfully dispatched!");
             location.reload();
         } catch(e) {
-            alert("Error assigning task.");
+            alert("Logic Error: Check if your Apps Script is deployed as 'Anyone'.");
             btn.disabled = false;
             btn.innerText = "Assign Task";
         }
     };
 
     function logout() { localStorage.clear(); window.location.href = "index.html"; }
+    
+    // Initial Load
     loadData();
 </script>
 </body>
