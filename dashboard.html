@@ -30,10 +30,13 @@
                 <span id="userOffice" class="badge bg-primary mt-2"></span>
             </div>
             <hr>
-            <nav class="nav flex-column">
-                <a class="nav-link active fw-bold" href="#"><i class="bi bi-list-task me-2"></i>My Tasks</a>
-                <a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
-            </nav>
+          <nav class="nav flex-column">
+    <a class="nav-link active fw-bold" href="#"><i class="bi bi-list-task me-2"></i>My Tasks</a>
+    <a class="nav-link text-dark" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">
+        <i class="bi bi-person-gear me-2"></i>Edit Profile
+    </a>
+    <a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+</nav>
         </div>
 
         <div class="col-md-9 col-lg-10 p-4">
