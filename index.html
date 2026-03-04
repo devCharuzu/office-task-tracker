@@ -12,7 +12,6 @@
         .btn-primary { background: #2563eb; border: none; padding: 12px; font-weight: 600; border-radius: 10px; }
         .form-control, .form-select { padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; }
         .hidden { display: none !important; }
-        @media (max-width: 576px) { .container { padding: 20px; } .auth-card { border-radius: 15px; } }
     </style>
 </head>
 <body>
@@ -23,18 +22,18 @@
                 <h2 class="fw-bold mb-1">Welcome</h2>
                 <p class="text-muted mb-4 small">Enter your credentials to access the portal.</p>
                 <input type="text" id="loginId" class="form-control mb-3" placeholder="Employee ID">
-                <input type="password" id="loginPass" class="form-control mb-4" placeholder="Password">
-                <div class="form-check mt-2 text-start">
-    <input class="form-check-input" type="checkbox" onclick="togglePass('loginPass')">
-    <label class="form-check-label small text-muted">Show Password</label>
-</div>
+                <input type="password" id="loginPass" class="form-control mb-2" placeholder="Password">
+                <div class="form-check mb-4 text-start">
+                    <input class="form-check-input" type="checkbox" onclick="togglePass('loginPass')">
+                    <label class="small text-muted">Show Password</label>
+                </div>
                 <button onclick="login()" id="loginBtn" class="btn btn-primary w-100 mb-3">Sign In</button>
                 <p class="text-center small mb-0">No account? <a href="#" onclick="toggleAuth()" class="text-decoration-none fw-bold">Register Now</a></p>
             </div>
 
             <div id="registerBox" class="hidden">
                 <h2 class="fw-bold mb-1">Join Us</h2>
-                <p class="text-muted mb-4 small">Create your unique ID and private password.</p>
+                <p class="text-muted mb-4 small">Create your account to start receiving tasks.</p>
                 <input type="text" id="regName" class="form-control mb-3" placeholder="Full Name">
                 <input type="text" id="regId" class="form-control mb-3" placeholder="Create Employee ID (e.g. EMP-01)">
                 <select id="regOffice" class="form-select mb-3">
@@ -44,11 +43,11 @@
                     <option value="HR">HR</option>
                     <option value="Operations">Operations</option>
                 </select>
-                <input type="password" id="regPass" class="form-control mb-4" placeholder="Create Password">
-                <div class="form-check mt-2 text-start">
-    <input class="form-check-input" type="checkbox" onclick="togglePass('regPass')">
-    <label class="form-check-label small text-muted">Show Password</label>
-</div>
+                <input type="password" id="regPass" class="form-control mb-2" placeholder="Create Password">
+                <div class="form-check mb-4 text-start">
+                    <input class="form-check-input" type="checkbox" onclick="togglePass('regPass')">
+                    <label class="small text-muted">Show Password</label>
+                </div>
                 <button onclick="register()" id="regBtn" class="btn btn-success w-100 mb-3 py-3 border-0 fw-bold">Create Account</button>
                 <p class="text-center small mb-0"><a href="#" onclick="toggleAuth()" class="text-decoration-none fw-bold">Back to Login</a></p>
             </div>
@@ -57,6 +56,7 @@
 </div>
 
 <script>
+    // MAKE SURE THIS URL IS THE LATEST DEPLOYMENT
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
 
     function toggleAuth() {
@@ -65,54 +65,84 @@
     }
 
     function togglePass(id) {
-    const x = document.getElementById(id);
-    x.type = x.type === "password" ? "text" : "password";
-}
+        const x = document.getElementById(id);
+        x.type = x.type === "password" ? "text" : "password";
+    }
 
     async function login() {
-        const id = document.getElementById('loginId').value;
-        const pass = document.getElementById('loginPass').value;
+        const idInput = document.getElementById('loginId').value.trim();
+        const passInput = document.getElementById('loginPass').value.trim();
         const btn = document.getElementById('loginBtn');
-        if(!id || !pass) return alert("Please fill all fields");
 
-        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying...';
+        if(!idInput || !passInput) return alert("Please fill all fields");
+
+        btn.disabled = true; 
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying...';
 
         try {
             const res = await fetch(API_URL);
             const data = await res.json();
-            const user = data.users.find(u => u.id.toString() === id && u.password.toString() === pass);
+            
+            // This maps exactly to the Apps Script: id and password
+            const user = data.users.find(u => 
+                String(u.id).toLowerCase() === String(idInput).toLowerCase() && 
+                String(u.password) === String(passInput)
+            );
 
             if (user) {
                 localStorage.setItem('office_session', JSON.stringify(user));
                 window.location.href = (user.role === "Director") ? "director.html" : "dashboard.html";
             } else {
                 alert("Invalid ID or Password");
-                btn.disabled = false; btn.innerText = "Sign In";
+                btn.disabled = false; 
+                btn.innerText = "Sign In";
             }
-        } catch(e) { alert("Connection Error"); btn.disabled = false; }
+        } catch(e) { 
+            console.error(e);
+            alert("Connection Error. Check your internet or Apps Script URL."); 
+            btn.disabled = false; 
+            btn.innerText = "Sign In";
+        }
     }
 
     async function register() {
-        const id = document.getElementById('regId').value;
-        const name = document.getElementById('regName').value;
+        const id = document.getElementById('regId').value.trim();
+        const name = document.getElementById('regName').value.trim();
         const office = document.getElementById('regOffice').value;
-        const pass = document.getElementById('regPass').value;
+        const pass = document.getElementById('regPass').value.trim();
         const btn = document.getElementById('regBtn');
 
         if(!id || !name || !office || !pass) return alert("All fields are required");
 
-        btn.disabled = true; btn.innerText = "Checking ID Availability...";
+        btn.disabled = true; 
+        btn.innerText = "Processing...";
 
-        const payload = { action: "REGISTER", id, name, designation: office, pass };
-        const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-        const result = await response.text();
+        // PAYLOAD matches the Apps Script 'REGISTER' logic
+        const payload = { 
+            action: "REGISTER", 
+            id: id, 
+            name: name, 
+            designation: office, 
+            pass: pass 
+        };
 
-        if (result === "DUPLICATE") {
-            alert("❌ Employee ID already exists. Try another.");
-            btn.disabled = false; btn.innerText = "Create Account";
-        } else {
-            alert("✅ Account Created Successfully!");
-            location.reload();
+        try {
+            const response = await fetch(API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify(payload) 
+            });
+            const result = await response.text();
+
+            if (result === "DUPLICATE") {
+                alert("❌ Employee ID already exists. Try another.");
+                btn.disabled = false; btn.innerText = "Create Account";
+            } else {
+                alert("✅ Account Created Successfully!");
+                location.reload();
+            }
+        } catch(e) {
+            alert("Registration failed. Please check connection.");
+            btn.disabled = false;
         }
     }
 </script>
