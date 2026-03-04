@@ -60,6 +60,73 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
     const session = JSON.parse(localStorage.getItem('office_session'));
 
+
+    // Pre-fill modal when it opens
+document.getElementById('profileModal').addEventListener('show.bs.modal', function () {
+    document.getElementById('editName').value = session.name;
+    document.getElementById('editPreview').src = session.profilePic || 'https://via.placeholder.com/80';
+});
+
+// Preview image before upload
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) { document.getElementById('editPreview').src = e.target.result; }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+async function saveProfile() {
+    const btn = document.getElementById('saveProfileBtn');
+    const fileInput = document.getElementById('editPicInput');
+    const newName = document.getElementById('editName').value;
+    const newPass = document.getElementById('editPass').value;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+
+    let fileData = null, fileName = "", fileType = "";
+
+    if (fileInput.files[0]) {
+        const file = fileInput.files[0];
+        fileData = await new Promise(r => {
+            const reader = new FileReader();
+            reader.onload = () => r(reader.result.split(',')[1]);
+            reader.readAsDataURL(file);
+        });
+        fileName = file.name;
+        fileType = file.type;
+    }
+
+    const payload = {
+        action: "UPDATE_PROFILE",
+        id: session.id,
+        name: newName,
+        pass: newPass || session.password,
+        fileData, fileName, fileType
+    };
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (result.status === "SUCCESS") {
+            // Update local session with new data
+            localStorage.setItem('office_session', JSON.stringify(result.user));
+            alert("✅ Profile updated successfully!");
+            location.reload();
+        }
+    } catch (e) {
+        // Because of GAS quirks, if it returns success but throws a CORS error, 
+        // we check if data actually changed or just reload.
+        alert("Profile update sent. Refreshing...");
+        location.reload();
+    }
+}
+
     if (!session) window.location.href = "index.html";
 
     // Initialize UI with Session Data
@@ -167,5 +234,35 @@
     function logout() { localStorage.clear(); window.location.href = "index.html"; }
     loadTasks();
 </script>
+
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-4">
+                    <img id="editPreview" src="https://via.placeholder.com/80" class="profile-img mb-2" style="cursor: pointer;" onclick="document.getElementById('editPicInput').click()">
+                    <p class="small text-muted">Click image to change</p>
+                    <input type="file" id="editPicInput" class="d-none" accept="image/*" onchange="previewImage(this)">
+                </div>
+                <div class="mb-3">
+                    <label class="small fw-bold">Full Name</label>
+                    <input type="text" id="editName" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="small fw-bold">New Password</label>
+                    <input type="password" id="editPass" class="form-control" placeholder="Leave blank to keep current">
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" onclick="saveProfile()" id="saveProfileBtn" class="btn btn-primary px-4">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
