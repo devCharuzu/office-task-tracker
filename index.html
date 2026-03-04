@@ -89,40 +89,38 @@
     }
 
     async function login() {
-        const idInput = document.getElementById('loginId').value.trim();
-        const passInput = document.getElementById('loginPass').value.trim();
-        const btn = document.getElementById('loginBtn');
+    const idInput = document.getElementById('loginId').value.trim();
+    const passInput = document.getElementById('loginPass').value.trim();
+    const btn = document.getElementById('loginBtn');
 
-        if(!idInput || !passInput) return alert("Please fill all fields");
+    if(!idInput || !passInput) return alert("Please fill all fields");
 
-        btn.disabled = true; 
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying...';
+    btn.disabled = true;
+    btn.innerHTML = 'Verifying...';
 
-        try {
-            const res = await fetch(API_URL);
-            const data = await res.json();
-            
-            // This maps exactly to the Apps Script: id and password
-            const user = data.users.find(u => 
-                String(u.id).toLowerCase() === String(idInput).toLowerCase() && 
-                String(u.password) === String(passInput)
-            );
+    try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        
+        // Find user by matching ID and Password (both converted to strings)
+        const user = data.users.find(u => 
+            String(u.id).toLowerCase() === String(idInput).toLowerCase() && 
+            String(u.password) === String(passInput)
+        );
 
-            if (user) {
-                localStorage.setItem('office_session', JSON.stringify(user));
-                window.location.href = (user.role === "Director") ? "director.html" : "dashboard.html";
-            } else {
-                alert("Invalid ID or Password");
-                btn.disabled = false; 
-                btn.innerText = "Sign In";
-            }
-        } catch(e) { 
-            console.error(e);
-            alert("Connection Error. Check your internet or Apps Script URL."); 
-            btn.disabled = false; 
-            btn.innerText = "Sign In";
+        if (user) {
+            localStorage.setItem('office_session', JSON.stringify(user));
+            // Redirect based on role in sheet
+            window.location.href = (user.role === "Director") ? "director.html" : "dashboard.html";
+        } else {
+            alert("Invalid ID or Password");
+            btn.disabled = false; btn.innerText = "Sign In";
         }
+    } catch(e) {
+        alert("Connection error. Ensure your script is deployed as 'Anyone'.");
+        btn.disabled = false; btn.innerText = "Sign In";
     }
+}
 
     async function register() {
         const id = document.getElementById('regId').value.trim();
