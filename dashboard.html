@@ -54,105 +54,114 @@
 </div>
 
 <script>
-    // MUST MATCH YOUR Code.gs DEPLOYMENT URL
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
-
     const session = JSON.parse(localStorage.getItem('office_session'));
+
     if (!session) window.location.href = "index.html";
 
-    // Initialize UI
-    document.getElementById('userName').textContent = session.name;
-    document.getElementById('userId').textContent = session.id;
-    document.getElementById('userOffice').textContent = session.designation;
+    // Initialize UI with Session Data
+    document.getElementById('userName').textContent = session.name || "User";
+    document.getElementById('userId').textContent = session.id || "N/A";
+    document.getElementById('userOffice').textContent = session.office || session.designation || "Staff";
     if(session.profilePic) document.getElementById('userPic').src = session.profilePic;
 
     async function loadTasks() {
         const container = document.getElementById('taskContainer');
-        container.innerHTML = '<div class="text-center w-100"><div class="spinner-border text-primary"></div></div>';
+        const noTasks = document.getElementById('noTasks');
+        container.innerHTML = '<div class="text-center w-100 py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Fetching your assignments...</p></div>';
         
         try {
             const res = await fetch(API_URL);
             const data = await res.json();
             
-// This converts both sides to clean strings to ensure '001' matches '001'
-const myTasks = data.tasks.filter(t => {
-    const dbID = String(t.EmployeeID).trim();
-    const sessionID = String(session.id).trim();
-    return dbID === sessionID;
-});
+            // Genius Fix: Strict string comparison for IDs like '001' vs 1
+            const myTasks = data.tasks.filter(t => String(t.EmployeeID).trim() === String(session.id).trim());
             
             if (myTasks.length === 0) {
-                document.getElementById('noTasks').classList.remove('d-none');
+                noTasks.classList.remove('d-none');
                 container.innerHTML = "";
                 return;
             }
 
-            document.getElementById('noTasks').classList.add('d-none');
-            container.innerHTML = myTasks.reverse().map(t => `
-                <div class="col-12">
+            noTasks.classList.add('d-none');
+            container.innerHTML = [...myTasks].reverse().map(t => `
+                <div class="col-12 mb-3">
                     <div class="card task-card p-3 shadow-sm status-${t.Status}">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <span class="badge bg-secondary badge-status mb-2">${t.TaskID}</span>
-                                <h5 class="fw-bold mb-1">${t.Title}</h5>
-                                <p class="text-muted small mb-2">${t.Instructions || 'No extra instructions.'}</p>
-                                ${t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="btn btn-sm btn-link p-0 text-decoration-none"><i class="bi bi-paperclip"></i> View Attachment</a>` : ''}
-                            </div>
-                            <div class="text-end">
-                                <span class="badge ${getStatusClass(t.Status)} mb-3">${t.Status}</span>
-                                <div id="actions-${t.TaskID}">
-                                    ${renderActions(t)}
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-dark text-white me-2" style="font-size:0.65rem">${t.TaskID}</span>
+                                    <span class="badge ${getStatusClass(t.Status)} badge-status">${t.Status}</span>
                                 </div>
+                                <h5 class="fw-bold mb-1">${t.Title}</h5>
+                                <p class="text-muted small mb-2">${t.Instructions || 'No additional instructions provided.'}</p>
+                                
+                                ${t.ReferenceLink ? `
+                                    <a href="${t.ReferenceLink}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2 mt-1" style="font-size:0.75rem">
+                                        <i class="bi bi-paperclip"></i> View Attached File
+                                    </a>` : ''}
+                            </div>
+                            <div class="ms-3 text-end" id="actions-${t.TaskID}">
+                                ${renderActions(t)}
                             </div>
                         </div>
                     </div>
                 </div>
             `).join('');
         } catch(e) {
-            container.innerHTML = `<div class="alert alert-danger">Error loading tasks: ${e.message}</div>`;
+            container.innerHTML = `<div class="alert alert-danger">Sync Error: ${e.message}</div>`;
         }
     }
 
     function getStatusClass(status) {
-        if(status === 'Assigned') return 'bg-warning text-dark';
-        if(status === 'Received') return 'bg-primary';
-        return 'bg-success';
+        switch(status) {
+            case 'Assigned': return 'bg-warning text-dark';
+            case 'Received': return 'bg-info text-white';
+            case 'Completed': return 'bg-success text-white';
+            default: return 'bg-secondary';
+        }
     }
 
     function renderActions(task) {
         if (task.Status === 'Assigned') {
-            return `<button onclick="updateStatus('${task.TaskID}', 'RECEIVE')" class="btn btn-sm btn-primary px-4">Receive Task</button>`;
+            return `<button onclick="updateStatus('${task.TaskID}', 'RECEIVE')" class="btn btn-primary shadow-sm btn-sm px-3 fw-bold">Accept Task</button>`;
         }
         if (task.Status === 'Received') {
-            return `<button onclick="updateStatus('${task.TaskID}', 'COMPLETE')" class="btn btn-sm btn-success px-4">Mark Complete</button>`;
+            return `<button onclick="updateStatus('${task.TaskID}', 'COMPLETE')" class="btn btn-success shadow-sm btn-sm px-3 fw-bold">Mark Done</button>`;
         }
-        return `<i class="bi bi-patch-check-fill text-success h4"></i>`;
+        return `<div class="text-success"><i class="bi bi-check-circle-fill h4"></i><br><small class="fw-bold">Finished</small></div>`;
     }
 
-    async function updateStatus(taskId, action) {
+    async function updateStatus(taskId, actionType) {
         const btnContainer = document.getElementById(`actions-${taskId}`);
-        btnContainer.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        const originalHTML = btnContainer.innerHTML;
+        btnContainer.innerHTML = '<div class="spinner-grow spinner-grow-sm text-primary"></div>';
 
         try {
+            // Using text/plain to avoid CORS preflight issues in GAS
             const response = await fetch(API_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action, taskId })
+                mode: 'no-cors', 
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ 
+                    action: actionType, 
+                    taskId: taskId,
+                    employeeId: session.id 
+                })
             });
-            const result = await response.text();
-            if (result === "SUCCESS") {
-                loadTasks(); // Refresh list
-            }
+
+            // Since no-cors doesn't give us the response, we assume success after a delay
+            setTimeout(() => {
+                loadTasks();
+            }, 1500);
+
         } catch(e) {
-            alert("Update failed. Check connection.");
-            loadTasks();
+            alert("Connection error. Try again.");
+            btnContainer.innerHTML = originalHTML;
         }
     }
 
-    function logout() {
-        localStorage.clear();
-        window.location.href = "index.html";
-    }
-
+    function logout() { localStorage.clear(); window.location.href = "index.html"; }
     loadTasks();
 </script>
 </body>
