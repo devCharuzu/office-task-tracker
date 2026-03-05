@@ -40,15 +40,13 @@
                 </div>
                 <div class="mb-3">
                     <label class="small fw-bold text-muted">Task Title</label>
-                    <input type="text" id="taskTitle" class="form-control border-0 bg-light" placeholder="e.g., Monthly Inventory">
+                    <input type="text" id="taskTitle" class="form-control border-0 bg-light" placeholder="Title">
                 </div>
                 <div class="mb-3">
                     <label class="small fw-bold text-muted">Instructions</label>
-                    <textarea id="taskInstructions" class="form-control border-0 bg-light" rows="3" placeholder="Step by step details..."></textarea>
+                    <textarea id="taskInstructions" class="form-control border-0 bg-light" rows="3"></textarea>
                 </div>
-                <button onclick="createTask()" id="createBtn" class="btn btn-primary w-100 fw-bold rounded-pill">
-                    <i class="bi bi-plus-circle me-1"></i> Send Task
-                </button>
+                <button onclick="createTask()" id="createBtn" class="btn btn-primary w-100 fw-bold rounded-pill">Send Task</button>
             </div>
         </div>
 
@@ -68,9 +66,7 @@
                                 <th class="text-center">Chat</th>
                             </tr>
                         </thead>
-                        <tbody id="taskTableBody">
-                            <tr><td colspan="4" class="text-center py-5">Connecting to server...</td></tr>
-                        </tbody>
+                        <tbody id="taskTableBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -82,13 +78,13 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-0 pb-0">
-                <h5 class="fw-bold"><i class="bi bi-chat-dots me-2 text-primary"></i>Discussion</h5>
+                <h5 class="fw-bold">Discussion</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div id="commentThread" class="d-flex flex-column mb-3" style="height: 350px; overflow-y: auto; background: #f8fafc; padding: 15px; border-radius: 12px; scroll-behavior: smooth;"></div>
                 <div class="input-group">
-                    <input type="text" id="commentInput" class="form-control border-0 bg-light" placeholder="Reply to employee..." onkeypress="if(event.key==='Enter') submitComment()">
+                    <input type="text" id="commentInput" class="form-control border-0 bg-light" placeholder="Reply..." onkeypress="if(event.key==='Enter') submitComment()">
                     <button class="btn btn-primary px-4" onclick="submitComment()" id="sendCommentBtn"><i class="bi bi-send-fill"></i></button>
                 </div>
             </div>
@@ -103,14 +99,25 @@
     let activeTaskId = null;
     let directorName = "Director"; 
     let isSending = false;
+    let isModalOpen = false;
+    let lastCommentCount = 0;
 
-    async function refreshData() {
+    async function refreshData(isSilent = false) {
         try {
             const res = await fetch(API_URL);
-            globalData = await res.json();
-            renderEmployees();
-            renderTasks();
-        } catch (e) { console.error("Data fetch failed", e); }
+            const data = await res.json();
+            globalData = data;
+
+            if (!isSilent || data.comments.length !== lastCommentCount) {
+                lastCommentCount = data.comments.length;
+                renderEmployees();
+                renderTasks();
+            }
+
+            if (isModalOpen && activeTaskId) {
+                renderThread(data.comments.filter(c => String(c.TaskID) === String(activeTaskId)));
+            }
+        } catch (e) { console.error("Refresh failed", e); }
     }
 
     function renderEmployees() {
@@ -121,31 +128,16 @@
 
     function renderTasks() {
         const tbody = document.getElementById('taskTableBody');
-        if (globalData.tasks.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4">No active tasks found.</td></tr>';
-            return;
-        }
-
         tbody.innerHTML = globalData.tasks.slice().reverse().map(t => {
             const emp = globalData.users.find(u => String(u.ID) === String(t.EmployeeID)) || {};
             const hasComments = globalData.comments.some(c => String(c.TaskID) === String(t.TaskID));
-            const statusClass = t.Status.toLowerCase();
-            
             return `
                 <tr>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <img src="${emp.ProfilePic || 'https://via.placeholder.com/32'}" class="emp-pic-sm shadow-sm">
-                            <div>
-                                <div class="fw-bold small">${emp.Name || 'Staff'}</div>
-                                <div class="text-muted" style="font-size:0.7rem">${emp.Office || ''}</div>
-                            </div>
-                        </div>
-                    </td>
+                    <td><div class="d-flex align-items-center"><img src="${emp.ProfilePic || ''}" class="emp-pic-sm"><div><div class="fw-bold small">${emp.Name || 'Staff'}</div></div></div></td>
                     <td><div class="small fw-bold">${t.Title}</div></td>
-                    <td><span class="status-pill bg-${statusClass}">${t.Status}</span></td>
+                    <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
                     <td class="text-center">
-                        <button onclick="openComments('${t.TaskID}')" class="btn btn-sm btn-light border-0 position-relative rounded-pill px-3">
+                        <button onclick="openComments('${t.TaskID}')" class="btn btn-sm btn-light border-0 position-relative">
                             <i class="bi bi-chat-left-dots text-primary"></i>
                             ${hasComments ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
                         </button>
@@ -155,105 +147,62 @@
         }).join('');
     }
 
-    // --- GENIUS FIX: Define openComments ---
     async function openComments(taskId) {
         activeTaskId = taskId;
+        isModalOpen = true;
         const modal = new bootstrap.Modal(document.getElementById('commentModal'));
         modal.show();
-        
-        const threadDiv = document.getElementById('commentThread');
-        threadDiv.innerHTML = '<div class="text-center mt-5 small text-muted">Loading thread...</div>';
-        
-        const thread = globalData.comments.filter(c => String(c.TaskID) === String(taskId));
-        renderThread(thread);
+        refreshData(false);
     }
 
     function renderThread(thread) {
         const threadDiv = document.getElementById('commentThread');
-        threadDiv.innerHTML = thread.map(c => `
+        const currentHtml = threadDiv.innerHTML;
+        const newHtml = thread.map(c => `
             <div class="chat-msg ${c.SenderName === directorName ? 'msg-me' : 'msg-them'}">
                 <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
                 ${c.Message}
             </div>
         `).join('') || '<div class="text-center mt-5 small text-muted">No messages yet.</div>';
-        threadDiv.scrollTop = threadDiv.scrollHeight;
+
+        if (currentHtml !== newHtml) {
+            threadDiv.innerHTML = newHtml;
+            threadDiv.scrollTop = threadDiv.scrollHeight;
+        }
     }
 
     async function submitComment() {
         const btn = document.getElementById('sendCommentBtn');
-        const input = document.getElementById('commentInput');
-        const msg = input.value.trim();
-
-        if (!msg || isSending) return;
-
+        if (isSending) return;
         isSending = true;
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
-        try {
-            await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: directorName, message: msg })
-            });
-
-            input.value = '';
-            // Silent refresh data
-            const res = await fetch(API_URL);
-            globalData = await res.json();
-            
-            const thread = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
-            renderThread(thread);
-        } catch (e) { alert("Failed to send reply."); } 
-        finally {
-            isSending = false;
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-send-fill"></i>';
-        }
+        await fetch(API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: directorName, message: document.getElementById('commentInput').value }) 
+        });
+        document.getElementById('commentInput').value = '';
+        isSending = false;
+        btn.disabled = false;
+        refreshData(false);
     }
 
-    // --- GENIUS FIX: Cleanup Modal Backdrop ---
-    document.addEventListener('DOMContentLoaded', () => {
-        const modalEl = document.getElementById('commentModal');
-        modalEl.addEventListener('hidden.bs.modal', () => {
-            const backdrops = document.querySelectorAll('.modal-backdrop');
-            backdrops.forEach(b => b.remove());
-            document.body.style.overflow = 'auto';
-            document.body.style.paddingRight = '0';
-        });
-    });
-
     async function createTask() {
-        const btn = document.getElementById('createBtn');
         const empId = document.getElementById('empSelect').value;
         const emp = globalData.users.find(u => String(u.ID) === String(empId));
-
-        btn.disabled = true;
-        btn.innerText = "Sending...";
-        
-        try {
-            await fetch(API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({
-                    action: "CREATE_TASK", empId, empName: emp.Name, office: emp.Office,
-                    title: document.getElementById('taskTitle').value,
-                    instructions: document.getElementById('taskInstructions').value
-                }) 
-            });
-            alert("Task Sent!");
-            document.getElementById('taskTitle').value = "";
-            document.getElementById('taskInstructions').value = "";
-        } catch(e) { alert("Error assigning task."); }
-        finally {
-            btn.disabled = false;
-            btn.innerText = "Send Task";
-            refreshData();
-        }
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CREATE_TASK", empId, empName: emp.Name, office: emp.Office, title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value }) });
+        alert("Task Sent!");
+        refreshData(false);
     }
 
     function logout() { localStorage.clear(); window.location.href = "index.html"; }
 
-    setInterval(refreshData, 30000); // 30s background sync
-    window.onload = refreshData;
+    document.getElementById('commentModal').addEventListener('hidden.bs.modal', () => {
+        isModalOpen = false;
+        activeTaskId = null;
+    });
+
+    setInterval(() => refreshData(true), 5000);
+    window.onload = () => refreshData();
 </script>
 </body>
 </html>
