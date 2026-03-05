@@ -37,6 +37,7 @@
         </div>
         <nav class="nav flex-column gap-2">
             <a class="nav-link active rounded-3 bg-light text-primary fw-bold" href="#"><i class="bi bi-grid-1x2 me-2"></i> Dashboard</a>
+            <a class="nav-link text-muted" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive me-2"></i> Archive</a>
             <a class="nav-link text-muted" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#profileModal"><i class="bi bi-person me-2"></i> Profile</a>
             <a class="nav-link text-danger mt-5" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
         </nav>
@@ -44,7 +45,7 @@
 
     <div class="mobile-nav d-lg-none">
         <a href="#" class="text-primary text-center flex-grow-1"><i class="bi bi-house-door fs-4"></i></a>
-        <a href="javascript:void(0)" onclick="loadTasks()" class="text-muted text-center flex-grow-1"><i class="bi bi-arrow-clockwise fs-4"></i></a>
+        <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#archiveModal" class="text-muted text-center flex-grow-1"><i class="bi bi-archive fs-4"></i></a>
         <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#profileModal" class="text-muted text-center flex-grow-1"><i class="bi bi-person fs-4"></i></a>
         <a href="javascript:void(0)" onclick="logout()" class="text-danger text-center flex-grow-1"><i class="bi bi-power fs-4"></i></a>
     </div>
@@ -57,16 +58,24 @@
         <div id="taskContainer" class="row g-4"></div>
     </main>
 
-    <div class="modal fade" id="commentModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
-                <div class="modal-header border-0 p-4 pb-0"><h5 class="fw-bold">Discussion</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body d-flex flex-column p-0">
-                    <div id="commentThread" class="p-4 d-flex flex-column gap-3" style="height: 450px; overflow-y: auto; background: #fafafa;"></div>
-                    <div class="p-3 bg-white border-top"><div class="input-group">
-                        <input type="text" id="commentInput" class="form-control border-0 bg-light rounded-start-pill px-3" placeholder="Message...">
-                        <button class="btn btn-primary rounded-end-pill px-4" onclick="submitComment()" id="sendCommentBtn"><i class="bi bi-send-fill"></i></button>
-                    </div></div>
+    <div class="modal fade" id="archiveModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+                <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Archived Tasks</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4"><div id="archiveContainer" class="row g-3"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editTaskModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+                <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Update Progress</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="editTaskId">
+                    <div class="mb-3"><label class="small fw-bold">Task Title</label><input type="text" id="editTaskTitle" class="form-control border-0 bg-light rounded-3"></div>
+                    <div class="mb-3"><label class="small fw-bold">Notes</label><textarea id="editTaskInstructions" class="form-control border-0 bg-light rounded-3" rows="3"></textarea></div>
+                    <button onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -94,7 +103,7 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
         let session = JSON.parse(localStorage.getItem('office_session'));
-        let activeTaskId = null, isSending = false, isModalOpen = false, compressedImg = null;
+        let compressedImg = null;
 
         if (!session) window.location.href = "index.html";
 
@@ -110,39 +119,62 @@
         async function loadTasks() {
             try {
                 const res = await fetch(API_URL); const data = await res.json();
-                renderTasksUI(data.tasks.filter(t => String(t.EmployeeID) === String(session.ID)), data.comments);
-                if (isModalOpen && activeTaskId) renderChat(data.comments.filter(c => String(c.TaskID) === String(activeTaskId)));
+                const myTasks = data.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
+                renderTasksUI(myTasks.filter(t => t.Archived !== true), 'taskContainer');
+                renderTasksUI(myTasks.filter(t => t.Archived === true), 'archiveContainer', true);
             } catch(e) { console.error(e); }
         }
 
-        function renderTasksUI(tasks, allComments) {
-            document.getElementById('taskContainer').innerHTML = tasks.reverse().map(t => `
-                <div class="col-12 col-xl-6">
+        function renderTasksUI(tasks, containerId, isArchive = false) {
+            document.getElementById(containerId).innerHTML = tasks.reverse().map(t => `
+                <div class="col-12 ${isArchive ? 'col-md-6' : 'col-xl-6'}">
                     <div class="card task-card p-4 status-${t.Status}">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
                                 <span class="badge rounded-pill mb-2 ${t.Status==='Assigned'?'bg-warning text-dark':(t.Status==='Received'?'bg-primary':'bg-success')}">${t.Status}</span>
                                 <h5 class="fw-bold mb-1">${t.Title}</h5>
                                 <p class="text-muted small mb-0">${t.Instructions || ''}</p>
-                                ${t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="btn btn-sm btn-outline-primary mt-2 py-0 px-2 rounded-pill small" style="font-size:0.7rem"><i class="bi bi-paperclip"></i> View File</a>` : ''}
                             </div>
-                            <button onclick="openComments('${t.TaskID}')" class="btn btn-light rounded-circle"><i class="bi bi-chat-text"></i></button>
+                            <div class="dropdown">
+                                <button class="btn btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm rounded-3">
+                                    <li><a class="dropdown-item small" href="javascript:void(0)" onclick="openEditTask('${t.TaskID}', '${t.Title}', '${t.Instructions}')"><i class="bi bi-pencil me-2"></i> Edit</a></li>
+                                    ${isArchive 
+                                        ? `<li><a class="dropdown-item small text-success" href="javascript:void(0)" onclick="toggleArchive('${t.TaskID}', false)"><i class="bi bi-arrow-up-circle me-2"></i> Restore</a></li>`
+                                        : `<li><a class="dropdown-item small text-danger" href="javascript:void(0)" onclick="toggleArchive('${t.TaskID}', true)"><i class="bi bi-archive me-2"></i> Archive</a></li>`
+                                    }
+                                </ul>
+                            </div>
                         </div>
                         <div class="d-flex gap-2">
                             ${t.Status==='Assigned'?`<button onclick="updateStatus('${t.TaskID}','Received')" class="btn btn-primary w-100 rounded-pill">Accept</button>`:''}${t.Status==='Received'?`<button onclick="updateStatus('${t.TaskID}','Completed')" class="btn btn-success w-100 rounded-pill">Done</button>`:''}
                         </div>
                     </div>
-                </div>`).join('') || '<div class="text-center py-5 w-100">No tasks.</div>';
-        }
-
-        function openComments(id) { activeTaskId = id; isModalOpen = true; new bootstrap.Modal(document.getElementById('commentModal')).show(); loadTasks(); }
-        function renderChat(thread) {
-            const div = document.getElementById('commentThread');
-            div.innerHTML = thread.map(c => `<div class="chat-msg ${c.SenderName === session.Name ? 'msg-me' : 'msg-them'}"><div class="fw-bold" style="font-size:0.7rem">${c.SenderName}</div>${c.Message}</div>`).join('');
-            div.scrollTop = div.scrollHeight;
+                </div>`).join('') || '<div class="text-center py-5 w-100 text-muted small">No tasks found</div>';
         }
 
         async function updateStatus(taskId, status) { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SET_STATUS", taskId, status }) }); loadTasks(); }
+        
+        async function toggleArchive(taskId, shouldArchive) {
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "TOGGLE_ARCHIVE", taskId, archived: shouldArchive }) });
+            loadTasks();
+        }
+
+        function openEditTask(id, title, desc) {
+            document.getElementById('editTaskId').value = id;
+            document.getElementById('editTaskTitle').value = title;
+            document.getElementById('editTaskInstructions').value = desc;
+            new bootstrap.Modal(document.getElementById('editTaskModal')).show();
+        }
+
+        async function saveTaskEdit() {
+            const id = document.getElementById('editTaskId').value;
+            const title = document.getElementById('editTaskTitle').value;
+            const instructions = document.getElementById('editTaskInstructions').value;
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "EDIT_TASK", taskId: id, title, instructions }) });
+            bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide();
+            loadTasks();
+        }
 
         function previewAndCompress(input) {
             if (input.files && input.files[0]) {
@@ -181,7 +213,7 @@
 
         function logout() { localStorage.clear(); window.location.href = "index.html"; }
         window.onload = () => { updateUIElements(); loadTasks(); };
-        setInterval(loadTasks, 6000);
+        setInterval(loadTasks, 8000);
     </script>
 </body>
 </html>
