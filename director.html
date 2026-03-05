@@ -11,18 +11,15 @@
         :root { --messenger-blue: #0084ff; --messenger-bg: #f0f2f5; --sidebar-width: 280px; }
         body { background: #f3f4f6; font-family: 'Inter', sans-serif; margin: 0; }
         
-        /* Global Loader */
         #globalLoader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.8); display: none;
             flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
         }
 
-        /* Sidebar - Default Visible */
         .sidebar { background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; width: var(--sidebar-width); z-index: 1000; padding: 30px; }
         .main-content { margin-left: var(--sidebar-width); padding: 40px; min-height: 100vh; transition: 0.3s; }
         
-        /* Mobile Nav - Hidden by Default */
         .mobile-nav { display: none; }
 
         .card-custom { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 20px; }
@@ -31,7 +28,6 @@
         .bg-received { background: #eff6ff; color: #1d4ed8; }
         .bg-completed { background: #f0fdf4; color: #15803d; }
 
-        /* Chat UI */
         .chat-modal-body { height: 500px; display: flex; flex-direction: column; background: #fff; }
         .chat-container { flex-grow: 1; overflow-y: auto; padding: 20px; background: var(--messenger-bg); display: flex; flex-direction: column; }
         .msg-bubble { padding: 10px 16px; border-radius: 18px; font-size: 0.9rem; max-width: 85%; margin-bottom: 10px; }
@@ -39,7 +35,6 @@
         .theirs { align-self: flex-start; background: white; color: black; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .spinner-btn { width: 1rem; height: 1rem; border-width: 0.15em; }
 
-        /* RESPONSIVE LOGIC */
         @media (max-width: 767px) {
             .sidebar { display: none !important; }
             .mobile-nav { 
@@ -89,13 +84,10 @@
                     <h6 class="fw-bold mb-4">Create Assignment</h6>
                     <label class="small fw-bold text-muted mb-1">Select Employee</label>
                     <select id="empSelect" class="form-select mb-3 bg-light border-0 py-2"></select>
-                    
                     <input type="text" id="taskTitle" class="form-control mb-3 bg-light border-0" placeholder="Task Title">
                     <textarea id="taskInstructions" class="form-control mb-3 bg-light border-0" rows="3" placeholder="Instructions..."></textarea>
-                    
                     <label class="small fw-bold text-muted mb-1">Attachment (Optional)</label>
                     <input type="file" id="taskFile" class="form-control mb-4 bg-light border-0 small">
-                    
                     <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold shadow-sm">Dispatch Task</button>
                 </div>
             </div>
@@ -129,6 +121,29 @@
         </div>
     </div>
 
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4">
+                <div class="modal-header border-0 shadow-sm px-4 py-3">
+                    <h6 class="fw-bold m-0">Edit Assignment</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="editTaskId">
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Title</label>
+                        <input type="text" id="editTitle" class="form-control bg-light border-0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Instructions</label>
+                        <textarea id="editInstructions" class="form-control bg-light border-0" rows="4"></textarea>
+                    </div>
+                    <button onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Task</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="chatModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 rounded-4 overflow-hidden">
@@ -158,7 +173,6 @@
                 const res = await fetch(API_URL);
                 const newData = await res.json();
                 const newHash = JSON.stringify(newData.tasks) + JSON.stringify(newData.comments) + JSON.stringify(newData.users);
-                
                 if (newHash === lastDataHash && isAuto) return;
                 globalData = newData; lastDataHash = newHash;
 
@@ -184,43 +198,72 @@
                         <td class="py-3"><b>${t.EmployeeName}</b> ${fileIcon}<br><small class="text-muted">${t.Title}</small></td>
                         <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
                         <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary rounded-circle me-1" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots"></i></button>
-                            <button class="btn btn-sm btn-light rounded-circle" onclick="toggleArch('${t.TaskID}', ${!isArch})"><i class="bi bi-${isArch?'arrow-up':'archive'}"></i></button>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                    <li><a class="dropdown-item small" href="#" onclick="openEditModal('${t.TaskID}')"><i class="bi bi-pencil me-2"></i> Edit Task</a></li>
+                                    <li><a class="dropdown-item small text-primary" href="#" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots me-2"></i> Chat</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item small" href="#" onclick="toggleArch('${t.TaskID}', ${!isArch})">
+                                        <i class="bi bi-${isArch?'arrow-up':'archive'} me-2"></i> ${isArch?'Restore':'Archive'}
+                                    </a></li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>`;
             }).join('') || '<tr><td colspan="3" class="text-center py-4">No data.</td></tr>';
+        }
+
+        function openEditModal(taskId) {
+            const task = globalData.tasks.find(t => String(t.TaskID) === String(taskId));
+            if(!task) return;
+            document.getElementById('editTaskId').value = task.TaskID;
+            document.getElementById('editTitle').value = task.Title;
+            document.getElementById('editInstructions').value = task.Instructions;
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        }
+
+        async function saveTaskEdit() {
+            const taskId = document.getElementById('editTaskId').value;
+            const newTitle = document.getElementById('editTitle').value;
+            const newInstr = document.getElementById('editInstructions').value;
+            
+            showLoader(true);
+            await fetch(API_URL, {method:'POST', body: JSON.stringify({
+                action: "EDIT_TASK", taskId, title: newTitle, instructions: newInstr
+            })});
+            
+            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+            await refresh();
+            showLoader(false);
         }
 
         async function createTask() {
             const empId = document.getElementById('empSelect').value;
             const selectedEmp = globalData.users.find(u => String(u.ID) === String(empId));
             const status = selectedEmp ? (selectedEmp.Status || 'Available') : 'Available';
-
             if (status !== 'Available') {
                 const proceed = confirm(`⚠️ ATTENTION: ${selectedEmp.Name} is currently "${status}". Proceed anyway?`);
                 if (!proceed) return;
             }
-
             const btn = document.getElementById('createBtn');
             const fInp = document.getElementById('taskFile');
             btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
             showLoader(true);
-
             let fData = null, fName = "";
             if (fInp.files[0]) {
                 fName = fInp.files[0].name;
                 fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
             }
-
             await fetch(API_URL, {method:'POST', body: JSON.stringify({
                 action: "CREATE_TASK", empId: empId, empName: selectedEmp.Name,
                 title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value,
                 fileData: fData, fileName: fName
             })});
-
             btn.disabled = false; btn.innerText = 'Dispatch Task';
-            document.getElementById('taskTitle').value = "";
-            document.getElementById('taskInstructions').value = "";
+            document.getElementById('taskTitle').value = ""; document.getElementById('taskInstructions').value = "";
             fInp.value = ""; showLoader(false); refresh();
         }
 
@@ -234,7 +277,6 @@
         function renderComments() {
             const container = document.getElementById('chatBody');
             const comments = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
-
             container.innerHTML = `
                 <div class="chat-container" id="chatScroll">
                     ${comments.map(c => `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`).join('')}
