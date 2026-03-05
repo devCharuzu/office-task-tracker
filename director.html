@@ -3,72 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Director Panel</title>
+    <title>Director Panel | TaskFlow</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        :root { --primary-grad: linear-gradient(135deg, #1e293b, #334155); }
+        :root { --messenger-blue: #0084ff; --messenger-bg: #e4e6eb; }
         body { background: #f3f4f6; font-family: 'Inter', sans-serif; margin: 0; }
-        .sidebar { background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; width: 260px; z-index: 1000; }
-        .mobile-nav { display: none; position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; z-index: 1001; padding: 10px 0; }
-        .main-content { margin-left: 260px; padding: 40px; min-height: 100vh; }
-        .card-custom { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .status-pill { font-size: 0.7rem; padding: 4px 10px; border-radius: 8px; font-weight: 700; text-transform: uppercase; }
-        .bg-assigned { background: #fff7ed; color: #c2410c; }
-        .bg-received { background: #eff6ff; color: #1d4ed8; }
-        .bg-completed { background: #f0fdf4; color: #15803d; }
-        .chat-msg { position: relative; max-width: 85%; padding: 10px 15px; border-radius: 18px; margin-bottom: 8px; font-size: 0.9rem; }
-.msg-own { background: #0084ff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-.msg-theirs { background: #e4e6eb; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
-.msg-menu-btn { opacity: 0; position: absolute; top: 50%; transform: translateY(-50%); border: none; background: none; cursor: pointer; transition: 0.2s; }
-.msg-own .msg-menu-btn { left: -30px; }
-.msg-theirs .msg-menu-btn { right: -30px; }
-.chat-msg:hover .msg-menu-btn { opacity: 1; }
-.unsend-btn { color: #ff3b30; font-size: 0.8rem; font-weight: 600; text-decoration: none; }
+        
+        /* Desktop Sidebar */
+        .sidebar { background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; width: 260px; z-index: 1000; padding: 30px; }
+        
+        /* Mobile Bottom Nav - FIXED LOGOUT INCLUDED */
+        .mobile-nav { display: none; position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; z-index: 1001; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        
+        .main-content { margin-left: 260px; padding: 40px; min-height: 100vh; transition: 0.3s; }
+        .card-custom { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 20px; }
+        
+        /* Messenger Chat UI */
+        .chat-container { height: 350px; overflow-y: auto; display: flex; flex-direction: column; padding: 15px; background: #f8f9fa; border-radius: 12px; }
+        .msg-wrapper { display: flex; flex-direction: column; margin-bottom: 12px; position: relative; max-width: 85%; }
+        .msg-wrapper.own { align-self: flex-end; align-items: flex-end; }
+        .msg-wrapper.theirs { align-self: flex-start; align-items: flex-start; }
+        .msg-bubble { padding: 8px 14px; border-radius: 18px; font-size: 0.9rem; position: relative; }
+        .own .msg-bubble { background: var(--messenger-blue); color: white; border-bottom-right-radius: 4px; }
+        .theirs .msg-bubble { background: var(--messenger-bg); color: black; border-bottom-left-radius: 4px; }
+        .msg-menu { opacity: 0; position: absolute; top: 50%; transform: translateY(-50%); transition: 0.2s; cursor: pointer; }
+        .own .msg-menu { left: -25px; }
+        .theirs .msg-menu { right: -25px; }
+        .msg-wrapper:hover .msg-menu { opacity: 1; }
+
         @media (max-width: 992px) {
             .sidebar { display: none; }
-            .mobile-nav { display: flex; justify-content: space-around; }
-            .main-content { margin-left: 0; padding: 20px 20px 100px 20px; }
+            .mobile-nav { display: flex; justify-content: space-around; align-items: center; }
+            .main-content { margin-left: 0; padding: 20px 20px 80px 20px; }
         }
     </style>
 </head>
 <body>
-    <aside class="sidebar p-4 d-none d-lg-block">
-        <div class="d-flex align-items-center mb-5"><div class="bg-dark p-2 rounded-3 me-2"><i class="bi bi-shield-lock text-white"></i></div><span class="fw-bold fs-5">Director</span></div>
-        <div class="mb-5 text-center">
-            <img id="dirPic" src="https://via.placeholder.com/80" class="rounded-circle mb-2 shadow-sm" style="width:80px; height:80px; object-fit:cover;">
-            <h6 id="dirNameDisplay" class="fw-bold m-0 text-truncate">---</h6>
+    <aside class="sidebar d-none d-lg-block">
+        <div class="fw-bold fs-5 mb-5"><i class="bi bi-shield-lock me-2"></i> Director</div>
+        <div class="text-center mb-5">
+            <img id="dirPic" src="https://via.placeholder.com/80" class="rounded-circle mb-2" style="width:80px;height:80px;object-fit:cover;">
+            <h6 id="dirNameDisplay" class="fw-bold m-0">---</h6>
         </div>
-        <nav class="nav flex-column gap-2">
-            <a class="nav-link active rounded-3 bg-light text-dark fw-bold" href="#"><i class="bi bi-kanban me-2"></i> Monitor</a>
-            <a class="nav-link text-muted" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive me-2"></i> Repository</a>
-            <a class="nav-link text-muted" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#profileModal"><i class="bi bi-person-gear me-2"></i> Profile</a>
-            <a class="nav-link text-danger mt-5" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
+        <nav class="nav flex-column gap-3">
+            <a class="nav-link text-dark fw-bold" href="#"><i class="bi bi-kanban me-2"></i> Monitor</a>
+            <a class="nav-link text-muted" href="#" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive me-2"></i> Repository</a>
+            <a class="nav-link text-muted" href="#" data-bs-toggle="modal" data-bs-target="#profileModal"><i class="bi bi-person me-2"></i> Profile</a>
+            <a class="nav-link text-danger mt-5" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
         </nav>
     </aside>
 
     <div class="mobile-nav d-lg-none">
-        <a href="#" class="text-dark text-center flex-grow-1"><i class="bi bi-kanban fs-4"></i></a>
-        <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#archiveModal" class="text-muted text-center flex-grow-1"><i class="bi bi-archive fs-4"></i></a>
-        <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#profileModal" class="text-muted text-center flex-grow-1"><i class="bi bi-person-gear fs-4"></i></a>
+        <a href="#" class="text-dark text-center flex-grow-1 text-decoration-none"><i class="bi bi-kanban fs-4"></i><div class="small">Home</div></a>
+        <a href="#" data-bs-toggle="modal" data-bs-target="#archiveModal" class="text-muted text-center flex-grow-1 text-decoration-none"><i class="bi bi-archive fs-4"></i><div class="small">Archive</div></a>
+        <a href="#" data-bs-toggle="modal" data-bs-target="#profileModal" class="text-muted text-center flex-grow-1 text-decoration-none"><i class="bi bi-person fs-4"></i><div class="small">Profile</div></a>
+        <a href="#" onclick="logout()" class="text-danger text-center flex-grow-1 text-decoration-none"><i class="bi bi-box-arrow-left fs-4"></i><div class="small">Logout</div></a>
     </div>
 
     <main class="main-content">
         <div class="row g-4">
             <div class="col-xl-4">
-                <div class="card card-custom p-4 shadow-sm">
+                <div class="card card-custom">
                     <h6 class="fw-bold mb-4">New Assignment</h6>
-                    <div class="mb-3"><select id="empSelect" class="form-select border-0 bg-light rounded-3"></select></div>
-                    <div class="mb-3"><input type="text" id="taskTitle" class="form-control border-0 bg-light rounded-3" placeholder="Task Title"></div>
-                    <div class="mb-3"><textarea id="taskInstructions" class="form-control border-0 bg-light rounded-3" rows="2" placeholder="Detailed Instructions..."></textarea></div>
-                    <div class="mb-4"><label class="small fw-bold text-muted">File Attachment</label><input type="file" id="taskFile" class="form-control border-0 bg-light rounded-3 small"></div>
-                    <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold">Dispatch Task</button>
+                    <select id="empSelect" class="form-select mb-3 bg-light border-0"></select>
+                    <input type="text" id="taskTitle" class="form-control mb-3 bg-light border-0" placeholder="Task Title">
+                    <textarea id="taskInstructions" class="form-control mb-3 bg-light border-0" rows="3" placeholder="Instructions..."></textarea>
+                    <input type="file" id="taskFile" class="form-control mb-4 bg-light border-0 small">
+                    <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill">Dispatch Task</button>
                 </div>
             </div>
             <div class="col-xl-8">
-                <div class="card card-custom p-4">
+                <div class="card card-custom">
                     <h6 class="fw-bold mb-4">Live Activity</h6>
-                    <div class="table-responsive"><table class="table align-middle border-0"><tbody id="taskTableBody"></tbody></table></div>
+                    <div class="table-responsive"><table class="table align-middle"><tbody id="taskTableBody"></tbody></table></div>
                 </div>
             </div>
         </div>
@@ -76,26 +84,17 @@
 
     <div class="modal fade" id="archiveModal" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content border-0 shadow" style="border-radius: 20px;">
-                <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Archive Repository</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body p-4"><div class="table-responsive"><table class="table align-middle border-0"><tbody id="archiveTableBody"></tbody></table></div></div>
+            <div class="modal-content border-0 rounded-4">
+                <div class="modal-header border-0"><h5>Repository</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><table class="table"><tbody id="archiveTableBody"></tbody></table></div>
             </div>
         </div>
     </div>
 
-    <div class="modal fade" id="profileModal" tabindex="-1">
+    <div class="modal fade" id="chatModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow" style="border-radius: 20px;">
-                <div class="modal-body p-4 text-center">
-                    <div class="position-relative d-inline-block mb-3">
-                        <img id="editPreview" src="https://via.placeholder.com/100" class="rounded-circle shadow-sm" style="width:100px; height:100px; object-fit:cover;">
-                        <button class="btn btn-sm btn-dark position-absolute bottom-0 end-0 rounded-circle" onclick="document.getElementById('editPicInput').click()"><i class="bi bi-camera"></i></button>
-                    </div>
-                    <input type="file" id="editPicInput" class="d-none" accept="image/*" onchange="previewAndCompress(this)">
-                    <input type="text" id="editName" class="form-control mb-3 border-0 bg-light rounded-3" placeholder="Name">
-                    <input type="password" id="editPass" class="form-control mb-3 border-0 bg-light rounded-3" placeholder="New Password">
-                    <button onclick="saveProfile()" id="dirProfileBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold">Update Profile</button>
-                </div>
+            <div class="modal-content border-0 rounded-4">
+                <div class="modal-body" id="chatBody"></div>
             </div>
         </div>
     </div>
@@ -103,129 +102,111 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
-        let globalData = { users: [], tasks: [] }, session = JSON.parse(localStorage.getItem('office_session')), compressedImg = null;
+        let session = JSON.parse(localStorage.getItem('office_session')), globalData = {users:[], tasks:[], comments:[]};
 
-        if(!session || session.Role !== "Director") window.location.href = "index.html";
+        async function refresh() {
+            try {
+                const res = await fetch(API_URL);
+                globalData = await res.json();
+                document.getElementById('empSelect').innerHTML = globalData.users.filter(u=>u.Role!=='Director').map(u=>`<option value="${u.ID}">${u.Name}</option>`).join('');
+                renderTasks(globalData.tasks.filter(t=>String(t.Archived).toUpperCase()!=="TRUE"), 'taskTableBody');
+                renderTasks(globalData.tasks.filter(t=>String(t.Archived).toUpperCase()==="TRUE"), 'archiveTableBody', true);
+            } catch(e) { console.error("Sync error"); }
+        }
 
+        function renderTasks(tasks, id, isArch = false) {
+            document.getElementById(id).innerHTML = tasks.reverse().map(t => `
+                <tr>
+                    <td><b>${t.EmployeeName}</b><br><small>${t.Title}</small></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary rounded-circle" onclick="openChat('${t.TaskID}')"><i class="bi bi-chat-dots"></i></button>
+                        <button class="btn btn-sm btn-light rounded-circle" onclick="toggleArch('${t.TaskID}', ${!isArch})"><i class="bi bi-${isArch?'arrow-up':'archive'}"></i></button>
+                    </td>
+                </tr>`).join('') || 'No tasks found.';
+        }
+
+        function openChat(taskId) {
+            renderComments(taskId, 'chatBody');
+            new bootstrap.Modal(document.getElementById('chatModal')).show();
+        }
 
         function renderComments(taskId, containerId) {
-    const container = document.getElementById(containerId);
-    const comments = globalData.comments.filter(c => String(c.TaskID) === String(taskId));
-    
-    let html = `<div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                    <span class="fw-bold small">Chat</span>
-                    <button class="btn btn-sm text-danger p-0 small" onclick="deleteAllChat('${taskId}')">Clear Chat</button>
+            const container = document.getElementById(containerId);
+            const comments = globalData.comments.filter(c => String(c.TaskID) === String(taskId));
+            container.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold m-0">Chat Activity</h6>
+                    <button class="btn btn-sm text-danger p-0" onclick="clearChat('${taskId}')">Clear History</button>
                 </div>
-                <div class="d-flex flex-column" style="height: 300px; overflow-y: auto; padding: 10px;">`;
-
-    html += comments.map(c => {
-        const isOwn = c.SenderName === session.Name;
-        return `
-            <div class="chat-msg ${isOwn ? 'msg-own' : 'msg-theirs'}">
-                ${c.Message}
-                <div class="msg-menu-btn dropdown">
-                    <i class="bi bi-three-dots-vertical" data-bs-toggle="dropdown"></i>
-                    <ul class="dropdown-menu shadow border-0">
-                        <li><a class="dropdown-item unsend-btn" href="#" onclick="unsendMsg('${taskId}', '${c.Message}', '${c.TimeStamp}')">Unsend</a></li>
-                    </ul>
+                <div class="chat-container" id="scroll-${taskId}">
+                    ${comments.map(c => {
+                        const isOwn = c.SenderName === session.Name;
+                        return `
+                        <div class="msg-wrapper ${isOwn ? 'own' : 'theirs'}">
+                            <div class="msg-bubble shadow-sm">
+                                ${c.Message}
+                                <div class="msg-menu dropdown">
+                                    <i class="bi bi-three-dots-vertical" data-bs-toggle="dropdown"></i>
+                                    <ul class="dropdown-menu border-0 shadow-sm">
+                                        <li><a class="dropdown-item small text-danger" onclick="unsendMsg('${taskId}', '${c.Message}', '${c.SenderName}')">Unsend</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="small text-muted mt-1" style="font-size:0.65rem">${c.SenderName}</div>
+                        </div>`;
+                    }).join('') || '<div class="text-center my-auto text-muted small">No messages.</div>'}
                 </div>
-            </div>
-        `;
-    }).join('');
-
-    html += `</div>`;
-    container.innerHTML = html;
-}
-
-// NEW FUNCTIONS
-async function unsendMsg(taskId, message, timestamp) {
-    if(!confirm("Unsend this message for everyone?")) return;
-    await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: "DELETE_COMMENT", taskId, message, timestamp })
-    });
-    refreshData(); // Re-sync UI
-}
-
-async function deleteAllChat(taskId) {
-    if(!confirm("Delete entire conversation? This cannot be undone.")) return;
-    await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: "DELETE_ALL_CHAT", taskId })
-    });
-    refreshData();
-}
-
-        async function refreshData() {
-            try {
-                const res = await fetch(API_URL); 
-                globalData = await res.json();
-                renderEmployees(); 
-                renderTasksUI(globalData.tasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE"), 'taskTableBody');
-                renderTasksUI(globalData.tasks.filter(t => String(t.Archived).toUpperCase() === "TRUE"), 'archiveTableBody', true);
-            } catch (e) { console.error(e); }
+                <div class="input-group mt-3">
+                    <input type="text" id="inp-${taskId}" class="form-control border-0 bg-light" placeholder="Message...">
+                    <button class="btn btn-primary" onclick="sendComment('${taskId}', 'inp-${taskId}')"><i class="bi bi-send"></i></button>
+                </div>
+            `;
+            const s = document.getElementById(`scroll-${taskId}`); if(s) s.scrollTop = s.scrollHeight;
         }
 
-        function renderEmployees() {
-            document.getElementById('empSelect').innerHTML = globalData.users
-                .filter(u => u.Role !== 'Director')
-                .map(u => `<option value="${u.ID}">${u.Name}</option>`).join('');
+        async function sendComment(taskId, inpId) {
+            const msg = document.getElementById(inpId).value; if(!msg) return;
+            await fetch(API_URL, {method:'POST', body: JSON.stringify({action:"ADD_COMMENT", taskId, sender:session.Name, message:msg})});
+            document.getElementById(inpId).value = ""; refresh().then(() => renderComments(taskId, 'chatBody'));
         }
 
-        function renderTasksUI(tasks, tbodyId, isArchive = false) {
-            document.getElementById(tbodyId).innerHTML = tasks.slice().reverse().map(t => `
-                <tr class="border-bottom">
-                    <td class="py-3"><div class="fw-bold small">${t.EmployeeName}</div></td>
-                    <td><div class="small fw-bold text-truncate" style="max-width:150px;">${t.Title}</div></td>
-                    <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
-                    <td class="text-end">
-                        <div class="dropdown">
-                            <button class="btn btn-light btn-sm rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
-                            <ul class="dropdown-menu border-0 shadow">
-                                ${isArchive 
-                                    ? `<li><a class="dropdown-item small text-success" href="javascript:void(0)" onclick="toggleArchive('${t.TaskID}', false)"><i class="bi bi-arrow-up-circle me-2"></i> Restore</a></li>`
-                                    : `<li><a class="dropdown-item small text-danger" href="javascript:void(0)" onclick="toggleArchive('${t.TaskID}', true)"><i class="bi bi-archive me-2"></i> Archive</a></li>`
-                                }
-                            </ul>
-                        </div>
-                    </td>
-                </tr>`).join('') || '<tr><td colspan="4" class="text-center py-4 text-muted small">No data</td></tr>';
+        async function unsendMsg(taskId, message, sender) {
+            if(!confirm("Unsend message?")) return;
+            await fetch(API_URL, {method:'POST', body: JSON.stringify({action:"DELETE_COMMENT", taskId, message, sender})});
+            refresh().then(() => renderComments(taskId, 'chatBody'));
         }
 
-        async function toggleArchive(taskId, shouldArchive) {
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "TOGGLE_ARCHIVE", taskId, archived: shouldArchive }) });
-            refreshData();
+        async function clearChat(taskId) {
+            if(!confirm("Clear chat?")) return;
+            await fetch(API_URL, {method:'POST', body: JSON.stringify({action:"DELETE_ALL_CHAT", taskId})});
+            refresh().then(() => renderComments(taskId, 'chatBody'));
+        }
+
+        async function toggleArch(taskId, val) {
+            await fetch(API_URL, {method:'POST', body: JSON.stringify({action:"TOGGLE_ARCHIVE", taskId, archived: val})});
+            refresh();
         }
 
         async function createTask() {
-            const btn = document.getElementById('createBtn');
-            const empId = document.getElementById('empSelect').value;
-            const emp = globalData.users.find(u => String(u.ID) === String(empId));
-            btn.disabled = true;
-            await fetch(API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ 
-                    action: "CREATE_TASK", 
-                    empId, 
-                    empName: emp.Name, 
-                    title: document.getElementById('taskTitle').value, 
-                    instructions: document.getElementById('taskInstructions').value 
-                })
-            });
-            btn.disabled = false;
-            alert("Task Dispatched!");
-            refreshData();
+            const fInp = document.getElementById('taskFile');
+            let fData = null, fName = "";
+            if (fInp.files[0]) {
+                fName = fInp.files[0].name;
+                fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
+            }
+            const btn = document.getElementById('createBtn'); btn.disabled = true;
+            await fetch(API_URL, {method:'POST', body: JSON.stringify({
+                action: "CREATE_TASK", empId: document.getElementById('empSelect').value,
+                empName: globalData.users.find(u=>u.ID==document.getElementById('empSelect').value).Name,
+                title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value,
+                fileData: fData, fileName: fName
+            })});
+            btn.disabled = false; fInp.value = ""; refresh(); alert("Dispatched!");
         }
 
-        function logout() { localStorage.clear(); window.location.href = "index.html"; }
-
-        window.onload = () => {
-            document.getElementById('dirNameDisplay').textContent = session.Name;
-            document.getElementById('dirPic').src = session.ProfilePic || "https://via.placeholder.com/80";
-            document.getElementById('editName').value = session.Name;
-            refreshData();
-        };
-        setInterval(refreshData, 15000);
+        function logout() { localStorage.clear(); window.location.href="index.html"; }
+        window.onload = () => { document.getElementById('dirNameDisplay').innerText = session.Name; refresh(); };
+        setInterval(refresh, 15000);
     </script>
 </body>
 </html>
