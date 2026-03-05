@@ -14,7 +14,7 @@
         .status-Assigned { border-left-color: #f59e0b; }
         .status-Received { border-left-color: #3b82f6; }
         .status-Completed { border-left-color: #10b981; opacity: 0.8; }
-        .chat-msg { padding: 8px 12px; border-radius: 15px; margin-bottom: 8px; font-size: 0.85rem; max-width: 85%; }
+        .chat-msg { padding: 8px 12px; border-radius: 15px; margin-bottom: 8px; font-size: 0.85rem; max-width: 85%; position: relative; }
         .msg-me { background: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .msg-them { background: #e2e8f0; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; }
     </style>
@@ -37,7 +37,10 @@
         </div>
 
         <div class="col-md-9 col-lg-10 p-4">
-            <h4 class="fw-bold mb-4">Task Inbox</h4>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0">Task Inbox</h4>
+                <button onclick="loadTasks()" class="btn btn-sm btn-outline-primary rounded-pill"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+            </div>
             <div id="taskContainer" class="row g-3"></div>
         </div>
     </div>
@@ -45,16 +48,16 @@
 
 <div class="modal fade" id="commentModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow">
             <div class="modal-header border-0 pb-0">
                 <h5 class="fw-bold">Task Discussion</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="commentThread" class="d-flex flex-column mb-3" style="height: 300px; overflow-y: auto; background: #f1f5f9; padding: 15px; border-radius: 10px;"></div>
+                <div id="commentThread" class="d-flex flex-column mb-3" style="height: 320px; overflow-y: auto; background: #f1f5f9; padding: 15px; border-radius: 10px; scroll-behavior: smooth;"></div>
                 <div class="input-group">
-                    <input type="text" id="commentInput" class="form-control" placeholder="Type concern...">
-                    <button class="btn btn-primary" onclick="submitComment()"><i class="bi bi-send"></i></button>
+                    <input type="text" id="commentInput" class="form-control" placeholder="Type concern..." onkeypress="if(event.key==='Enter') submitComment()">
+                    <button class="btn btn-primary" onclick="submitComment()" id="sendCommentBtn"><i class="bi bi-send"></i></button>
                 </div>
             </div>
         </div>
@@ -86,9 +89,11 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
     let session = JSON.parse(localStorage.getItem('office_session'));
     let activeTaskId = null;
+    let isSending = false;
 
     if (!session) window.location.href = "index.html";
 
+    // 1. UI LOADERS
     function updateSidebarUI() {
         document.getElementById('userNameDisplay').textContent = session.Name;
         document.getElementById('userIdDisplay').textContent = `ID: ${session.ID}`;
@@ -101,106 +106,105 @@
     }
 
     async function loadTasks() {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        const myTasks = data.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
-        
-        document.getElementById('taskContainer').innerHTML = myTasks.reverse().map(t => {
-            const hasComments = data.comments.some(c => String(c.TaskID) === String(t.TaskID));
-            return `
-                <div class="col-12">
-                    <div class="card task-card p-3 shadow-sm status-${t.Status}">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <span class="badge ${t.Status==='Assigned'?'bg-warning text-dark':(t.Status==='Received'?'bg-primary':'bg-success')} mb-2">${t.Status}</span>
-                                <h6 class="fw-bold mb-1">${t.Title}</h6>
-                                <p class="small text-muted">${t.Instructions || ''}</p>
-                            </div>
-                            <div class="text-end">
-                                <button onclick="openComments('${t.TaskID}')" class="btn btn-sm btn-outline-secondary position-relative">
-                                    <i class="bi bi-chat-dots"></i> Concern
-                                    ${hasComments ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
-                                </button>
-                                <div class="mt-2" id="btns-${t.TaskID}">
-                                    ${t.Status === 'Assigned' ? `<button onclick="updateStatus('${t.TaskID}', 'Received')" class="btn btn-primary btn-sm rounded-pill px-3">Accept</button>` : ''}
-                                    ${t.Status === 'Received' ? `<button onclick="updateStatus('${t.TaskID}', 'Completed')" class="btn btn-success btn-sm rounded-pill px-3">Mark Done</button>` : ''}
+        const container = document.getElementById('taskContainer');
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            const myTasks = data.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
+            
+            container.innerHTML = myTasks.reverse().map(t => {
+                const hasComments = data.comments.some(c => String(c.TaskID) === String(t.TaskID));
+                return `
+                    <div class="col-12">
+                        <div class="card task-card p-3 shadow-sm status-${t.Status}">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <span class="badge ${t.Status==='Assigned'?'bg-warning text-dark':(t.Status==='Received'?'bg-primary':'bg-success')} mb-2">${t.Status}</span>
+                                    <h6 class="fw-bold mb-1">${t.Title}</h6>
+                                    <p class="small text-muted mb-0">${t.Instructions || ''}</p>
+                                </div>
+                                <div class="text-end">
+                                    <button onclick="openComments('${t.TaskID}')" class="btn btn-sm btn-outline-secondary position-relative">
+                                        <i class="bi bi-chat-dots"></i> Concern
+                                        ${hasComments ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
+                                    </button>
+                                    <div class="mt-2" id="btns-${t.TaskID}">
+                                        ${t.Status === 'Assigned' ? `<button onclick="updateStatus('${t.TaskID}', 'Received')" class="btn btn-primary btn-sm rounded-pill px-3">Accept</button>` : ''}
+                                        ${t.Status === 'Received' ? `<button onclick="updateStatus('${t.TaskID}', 'Completed')" class="btn btn-success btn-sm rounded-pill px-3">Mark Done</button>` : ''}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                `;
+            }).join('') || '<div class="text-center py-5 text-muted">No tasks assigned yet.</div>';
+        } catch(e) { container.innerHTML = "Error loading tasks."; }
+    }
+
+    // 2. COMMENT LOGIC
+    async function openComments(taskId) {
+        activeTaskId = taskId;
+        const modal = new bootstrap.Modal(document.getElementById('commentModal'));
+        modal.show();
+        document.getElementById('commentThread').innerHTML = '<div class="text-center mt-5 small text-muted">Loading messages...</div>';
+        await refreshThreadOnly();
+    }
+
+    async function refreshThreadOnly() {
+        const threadDiv = document.getElementById('commentThread');
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            const thread = data.comments.filter(c => String(c.TaskID) === String(activeTaskId));
+            
+            threadDiv.innerHTML = thread.map(c => `
+                <div class="chat-msg ${c.SenderName === session.Name ? 'msg-me' : 'msg-them'}">
+                    <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
+                    ${c.Message}
                 </div>
-            `;
-        }).join('');
+            `).join('') || '<div class="text-center mt-5 small text-muted">No messages yet. Start the conversation.</div>';
+            
+            threadDiv.scrollTop = threadDiv.scrollHeight;
+        } catch(e) { threadDiv.innerHTML = "Failed to load thread."; }
     }
 
-  let isSending = false; // Prevention flag
+    async function submitComment() {
+        const btn = document.getElementById('sendCommentBtn');
+        const input = document.getElementById('commentInput');
+        const msg = input.value.trim();
+        
+        if (!msg || isSending) return;
 
-async function submitComment() {
-    const btn = document.querySelector('#commentModal .btn-primary');
-    const input = document.getElementById('commentInput');
-    const msg = input.value.trim();
-    
-    if (!msg || isSending) return;
+        isSending = true;
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-    // 1. Enter Loading State
-    isSending = true;
-    const originalBtnHtml = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
-    try {
-        const response = await fetch(API_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ 
-                action: "ADD_COMMENT", 
-                taskId: activeTaskId, 
-                senderName: session.Name, 
-                message: msg 
-            }) 
-        });
-
-        if (response.ok) {
+        try {
+            await fetch(API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: session.Name, message: msg }) 
+            });
             input.value = '';
-            // 2. Refresh the thread immediately
-            await refreshThreadOnly(); 
+            await refreshThreadOnly();
+        } catch (e) { alert("Error sending message."); }
+        finally {
+            isSending = false;
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
         }
-    } catch (e) {
-        alert("Failed to send message. Check connection.");
-    } finally {
-        // 3. Exit Loading State
-        isSending = false;
-        btn.disabled = false;
-        btn.innerHTML = originalBtnHtml;
     }
-}
 
-// Helper to refresh thread without closing modal
-async function refreshThreadOnly() {
-    const threadDiv = document.getElementById('commentThread');
-    const res = await fetch(API_URL);
-    const data = await res.json();
-    const thread = data.comments.filter(c => String(c.TaskID) === String(activeTaskId));
-    
-    threadDiv.innerHTML = thread.map(c => `
-        <div class="chat-msg ${c.SenderName === session.Name ? 'msg-me' : 'msg-them'}">
-            <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
-            ${c.Message}
-        </div>
-    `).join('') || '<div class="text-center small text-muted">No messages yet.</div>';
-    
-    // Auto-scroll to bottom
-    threadDiv.scrollTop = threadDiv.scrollHeight;
-}
-
+    // 3. TASK & PROFILE UPDATES
     async function updateStatus(taskId, status) {
+        document.getElementById(`btns-${taskId}`).innerHTML = '<div class="spinner-border spinner-border-sm text-primary"></div>';
         await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SET_STATUS", taskId, status }) });
         loadTasks();
     }
 
     async function saveProfile() {
         const btn = document.getElementById('saveBtn');
-        btn.disabled = true;
-        btn.innerHTML = 'Syncing...';
+        btn.disabled = true; btn.innerHTML = 'Syncing...';
         
         const file = document.getElementById('editPicInput').files[0];
         let fileData = null, fileType = "";
@@ -219,8 +223,22 @@ async function refreshThreadOnly() {
         }
     }
 
+    // 4. CLEANUP & UTILS
     function previewImage(input) { if (input.files && input.files[0]) { const r = new FileReader(); r.onload = (e) => document.getElementById('editPreview').src = e.target.result; r.readAsDataURL(input.files[0]); } }
     function logout() { localStorage.clear(); window.location.href = "index.html"; }
+
+    // CRITICAL BUG FIX FOR MODAL BACKDROP
+    document.addEventListener('DOMContentLoaded', () => {
+        const modalEl = document.getElementById('commentModal');
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(b => b.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = 'auto';
+            document.body.style.paddingRight = '0';
+        });
+    });
+
     window.onload = () => { updateSidebarUI(); loadTasks(); };
 </script>
 </body>
