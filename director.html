@@ -152,26 +152,20 @@
         }).join('');
     }
 
-    async function openComments(taskId) {
-        activeTaskId = taskId;
-        const modal = new bootstrap.Modal(document.getElementById('commentModal'));
-        modal.show();
-        
-        // Filter comments for this task
-        const thread = globalData.comments.filter(c => String(c.TaskID) === String(taskId));
-        
-        document.getElementById('commentThread').innerHTML = thread.map(c => `
-            <div class="chat-msg ${c.SenderName === directorName ? 'msg-me' : 'msg-them'}">
-                <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
-                ${c.Message}
-            </div>
-        `).join('') || '<div class="text-center small text-muted">No messages yet.</div>';
-    }
+    let isSending = false;
 
-    async function submitComment() {
-        const msg = document.getElementById('commentInput').value;
-        if (!msg) return;
+async function submitComment() {
+    const btn = document.querySelector('#commentModal .btn-primary');
+    const input = document.getElementById('commentInput');
+    const msg = input.value.trim();
 
+    if (!msg || isSending) return;
+
+    isSending = true;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    try {
         await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -182,11 +176,40 @@
             })
         });
 
-        document.getElementById('commentInput').value = '';
-        // Re-fetch everything to show the new message
-        await refreshData();
-        openComments(activeTaskId); 
+        input.value = '';
+        // Reload data so the red dot updates and the chat shows the new message
+        const res = await fetch(API_URL);
+        globalData = await res.json();
+        
+        // Update the thread display
+        const thread = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
+        document.getElementById('commentThread').innerHTML = thread.map(c => `
+            <div class="chat-msg ${c.SenderName === directorName ? 'msg-me' : 'msg-them'}">
+                <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
+                ${c.Message}
+            </div>
+        `).join('');
+        
+        const threadDiv = document.getElementById('commentThread');
+        threadDiv.scrollTop = threadDiv.scrollHeight;
+
+    } catch (e) {
+        console.error(e);
+    } finally {
+        isSending = false;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-send"></i>';
     }
+}
+
+// CRITICAL FIX: Ensure UI is clickable after modal close
+document.getElementById('commentModal').addEventListener('hidden.bs.modal', function () {
+    // Force remove any leftover backdrops
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(b => b.remove());
+    document.body.style.overflow = 'auto'; // Re-enable scrolling
+    document.body.style.paddingRight = '0';
+});
 
     async function createTask() {
         const btn = document.getElementById('createBtn');
