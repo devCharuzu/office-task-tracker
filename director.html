@@ -3,149 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Director Panel | Task Management</title>
+    <title>Director Control Panel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        body { background: #f1f5f9; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        .navbar { background: #1e293b; color: white; }
-        .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .status-pill { font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; font-weight: 600; text-transform: capitalize; }
-        .bg-assigned { background: #fef3c7; color: #92400e; }
-        .bg-received { background: #dbeafe; color: #1e40af; }
-        .bg-completed { background: #dcfce7; color: #166534; }
-        .chat-msg { padding: 8px 12px; border-radius: 15px; margin-bottom: 8px; font-size: 0.85rem; max-width: 90%; word-wrap: break-word; }
-        .msg-me { background: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .msg-them { background: #e2e8f0; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; }
-        .emp-pic-sm { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; }
-        @media (max-width: 576px) { .table { font-size: 0.85rem; } .status-pill { padding: 2px 8px; } }
+        body { background: #f8fafc; font-family: 'Inter', sans-serif; }
+        .nav-glass { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); color: white; }
+        .card-custom { border: none; border-radius: 20px; background: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        .status-pill { font-size: 0.75rem; padding: 6px 12px; border-radius: 10px; font-weight: 600; }
+        .bg-assigned { background: #fff7ed; color: #c2410c; }
+        .bg-received { background: #eff6ff; color: #1d4ed8; }
+        .bg-completed { background: #f0fdf4; color: #15803d; }
+        .emp-row:hover { background: #f8fafc; cursor: pointer; }
+        .chat-msg { padding: 10px 14px; border-radius: 18px; font-size: 0.85rem; max-width: 85%; }
+        .msg-me { background: #1e293b; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .msg-them { background: #e2e8f0; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 4px; }
+        
+        /* Hamburger Sidebar for Tablet/Mobile */
+        @media (max-width: 991px) {
+            .assign-card { margin-bottom: 20px; }
+        }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark p-3 mb-3 shadow sticky-top">
-    <div class="container-fluid">
-        <span class="navbar-brand fw-bold small-text"><i class="bi bi-shield-lock me-1"></i> Control Panel</span>
-        <button class="btn btn-outline-light btn-sm rounded-pill" onclick="logout()">Logout</button>
-    </div>
-</nav>
-
-<div class="container-fluid">
-    <div class="row g-3">
-        <div class="col-lg-4">
-            <div class="card p-3 p-md-4 shadow-sm">
-                <h6 class="fw-bold mb-3">Assign New Task</h6>
-                <div class="mb-3"><label class="small fw-bold text-muted">Employee</label><select id="empSelect" class="form-select border-0 bg-light"></select></div>
-                <div class="mb-3"><label class="small fw-bold text-muted">Title</label><input type="text" id="taskTitle" class="form-control border-0 bg-light"></div>
-                <div class="mb-3"><label class="small fw-bold text-muted">Instructions</label><textarea id="taskInstructions" class="form-control border-0 bg-light" rows="2"></textarea></div>
-                <button onclick="createTask()" id="createBtn" class="btn btn-primary w-100 fw-bold rounded-pill">Send Task</button>
+    <nav class="navbar navbar-dark nav-glass sticky-top py-3 shadow-sm">
+        <div class="container-fluid">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-outline-light border-0 me-2 d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                <span class="navbar-brand fw-bold"><i class="bi bi-shield-check me-2"></i>Director Center</span>
             </div>
+            <button class="btn btn-light btn-sm rounded-pill px-3" onclick="logout()">Logout</button>
         </div>
+    </nav>
 
-        <div class="col-lg-8">
-            <div class="card p-3 p-md-4 shadow-sm">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold m-0">Live Task Monitor</h6>
-                    <button onclick="refreshData()" class="btn btn-sm btn-white border rounded-circle"><i class="bi bi-arrow-clockwise"></i></button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead class="table-light"><tr class="small text-muted text-uppercase"><th>Staff</th><th>Task</th><th>Status</th><th class="text-center">Chat</th></tr></thead>
-                        <tbody id="taskTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="commentModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Discussion</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body d-flex flex-column">
-                <div id="commentThread" class="d-flex flex-column mb-3" style="flex-grow: 1; height: 350px; overflow-y: auto; background: #f8fafc; padding: 15px; border-radius: 12px;"></div>
-                <div class="input-group">
-                    <input type="text" id="commentInput" class="form-control border-0 bg-light" placeholder="Reply..." onkeypress="if(event.key==='Enter') submitComment()">
-                    <button class="btn btn-primary px-3" onclick="submitComment()" id="sendCommentBtn"><i class="bi bi-send-fill"></i></button>
+    <div class="container-fluid py-4">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card card-custom p-4 assign-card h-100">
+                    <h5 class="fw-bold mb-4"><i class="bi bi-plus-circle-dotted me-2 text-primary"></i>Assign Task</h5>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Employee</label>
+                        <select id="empSelect" class="form-select border-0 bg-light rounded-3"></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Title</label>
+                        <input type="text" id="taskTitle" class="form-control border-0 bg-light rounded-3">
+                    </div>
+                    <div class="mb-4">
+                        <label class="small fw-bold text-muted">Instructions</label>
+                        <textarea id="taskInstructions" class="form-control border-0 bg-light rounded-3" rows="3"></textarea>
+                    </div>
+                    <button onclick="createTask()" id="createBtn" class="btn btn-primary w-100 rounded-3 py-2 fw-bold shadow-sm">Send Assignment</button>
                 </div>
             </div>
+
+            <div class="col-lg-8">
+                <div class="card card-custom p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold m-0">Live Monitor</h5>
+                        <button onclick="refreshData()" class="btn btn-light btn-sm rounded-circle"><i class="bi bi-arrow-repeat"></i></button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle border-0">
+                            <thead><tr class="text-muted small"><th>Employee</th><th>Task</th><th>Status</th><th class="text-center">Chat</th></tr></thead>
+                            <tbody id="taskTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
-    let globalData = { users: [], tasks: [], comments: [] };
-    let activeTaskId = null, isSending = false, isModalOpen = false, taskReadStatus = {};
+    <div class="modal fade" id="commentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="fw-bold">Discussion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body d-flex flex-column">
+                    <div id="commentThread" class="p-3 d-flex flex-column gap-2" style="height: 400px; overflow-y: auto; background: #f8fafc; border-radius: 15px;"></div>
+                    <div class="mt-3">
+                        <div class="input-group">
+                            <input type="text" id="commentInput" class="form-control border-0 bg-light" placeholder="Reply..." onkeypress="if(event.key==='Enter') submitComment()">
+                            <button class="btn btn-primary rounded-3" onclick="submitComment()" id="sendCommentBtn"><i class="bi bi-send-fill"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    async function refreshData() {
-        try {
-            const res = await fetch(API_URL);
-            globalData = await res.json();
-            renderEmployees(); renderTasks();
-            if (isModalOpen && activeTaskId) {
-                const thread = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
-                renderThread(thread); taskReadStatus[activeTaskId] = thread.length;
-            }
-        } catch (e) { console.error(e); }
-    }
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
+        let globalData = { users: [], tasks: [], comments: [] };
+        let activeTaskId = null, isSending = false, isModalOpen = false, taskReadStatus = {};
 
-    function renderEmployees() {
-        const select = document.getElementById('empSelect');
-        select.innerHTML = globalData.users.filter(u => u.Role !== 'Director').map(u => `<option value="${u.ID}">${u.Name}</option>`).join('');
-    }
+        async function refreshData() {
+            try {
+                const res = await fetch(API_URL);
+                globalData = await res.json();
+                renderEmployees();
+                renderTasks();
+                if (isModalOpen && activeTaskId) {
+                    const thread = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
+                    renderThread(thread);
+                    taskReadStatus[activeTaskId] = thread.length;
+                }
+            } catch (e) { console.error(e); }
+        }
 
-    function renderTasks() {
-        const tbody = document.getElementById('taskTableBody');
-        tbody.innerHTML = globalData.tasks.slice().reverse().map(t => {
-            const emp = globalData.users.find(u => String(u.ID) === String(t.EmployeeID)) || {};
-            const count = globalData.comments.filter(c => String(c.TaskID) === String(t.TaskID)).length;
-            const hasNew = count > (taskReadStatus[t.TaskID] || 0);
-            return `
-                <tr>
-                    <td><div class="d-flex align-items-center"><img src="${emp.ProfilePic || ''}" class="emp-pic-sm d-none d-sm-block"><div><div class="fw-bold small">${emp.Name || 'Staff'}</div></div></div></td>
-                    <td><div class="small fw-bold text-truncate" style="max-width: 100px;">${t.Title}</div></td>
-                    <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
-                    <td class="text-center">
-                        <button onclick="openComments('${t.TaskID}', ${count})" class="btn btn-sm btn-light border-0 position-relative rounded-pill">
-                            <i class="bi bi-chat-dots text-primary"></i>
-                            ${hasNew ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
+        function renderEmployees() {
+            const select = document.getElementById('empSelect');
+            select.innerHTML = globalData.users.filter(u => u.Role !== 'Director').map(u => `<option value="${u.ID}">${u.Name}</option>`).join('');
+        }
 
-    async function openComments(taskId, count) { activeTaskId = taskId; taskReadStatus[taskId] = count; isModalOpen = true; new bootstrap.Modal(document.getElementById('commentModal')).show(); refreshData(); }
+        function renderTasks() {
+            const tbody = document.getElementById('taskTableBody');
+            tbody.innerHTML = globalData.tasks.slice().reverse().map(t => {
+                const emp = globalData.users.find(u => String(u.ID) === String(t.EmployeeID)) || {};
+                const count = globalData.comments.filter(c => String(c.TaskID) === String(t.TaskID)).length;
+                const hasNew = count > (taskReadStatus[t.TaskID] || 0);
+                return `
+                    <tr class="emp-row">
+                        <td><div class="fw-bold small">${emp.Name || 'Staff'}</div><div class="text-muted" style="font-size:0.7rem">${emp.Office || ''}</div></td>
+                        <td><div class="small fw-bold text-truncate" style="max-width: 120px;">${t.Title}</div></td>
+                        <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
+                        <td class="text-center">
+                            <button onclick="openComments('${t.TaskID}', ${count})" class="btn btn-sm btn-white border-0 position-relative">
+                                <i class="bi bi-chat-dots text-primary fs-5"></i>
+                                ${hasNew ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
 
-    function renderThread(thread) {
-        const threadDiv = document.getElementById('commentThread');
-        const newHtml = thread.map(c => `<div class="chat-msg ${c.SenderName === 'Director' ? 'msg-me' : 'msg-them'}"><div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>${c.Message}</div>`).join('') || '<div class="text-center mt-5 small text-muted">No messages yet.</div>';
-        if (threadDiv.innerHTML !== newHtml) { threadDiv.innerHTML = newHtml; threadDiv.scrollTop = threadDiv.scrollHeight; }
-    }
+        async function openComments(taskId, count) { activeTaskId = taskId; taskReadStatus[taskId] = count; isModalOpen = true; new bootstrap.Modal(document.getElementById('commentModal')).show(); refreshData(); }
 
-    async function submitComment() {
-        const input = document.getElementById('commentInput');
-        if (!input.value.trim() || isSending) return;
-        isSending = true;
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: "Director", message: input.value.trim() }) });
-        input.value = ''; isSending = false; refreshData();
-    }
+        function renderThread(thread) {
+            const div = document.getElementById('commentThread');
+            const html = thread.map(c => `<div class="chat-msg ${c.SenderName === 'Director' ? 'msg-me' : 'msg-them'}"><div class="fw-bold" style="font-size:0.7rem">${c.SenderName}</div>${c.Message}</div>`).join('');
+            if(div.innerHTML !== html) { div.innerHTML = html; div.scrollTop = div.scrollHeight; }
+        }
 
-    async function createTask() {
-        const empId = document.getElementById('empSelect').value;
-        const emp = globalData.users.find(u => String(u.ID) === String(empId));
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CREATE_TASK", empId, empName: emp.Name, office: emp.Office, title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value }) });
-        alert("Task Sent!"); refreshData();
-    }
+        async function submitComment() {
+            const input = document.getElementById('commentInput');
+            if(!input.value.trim() || isSending) return;
+            isSending = true;
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: "Director", message: input.value.trim() }) });
+            input.value = ''; isSending = false; refreshData();
+        }
 
-    function logout() { localStorage.clear(); window.location.href = "index.html"; }
-    document.getElementById('commentModal').addEventListener('hidden.bs.modal', () => { isModalOpen = false; refreshData(); });
-    setInterval(refreshData, 5000);
-    window.onload = refreshData;
-</script>
+        async function createTask() {
+            const empId = document.getElementById('empSelect').value;
+            const emp = globalData.users.find(u => String(u.ID) === String(empId));
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CREATE_TASK", empId, empName: emp.Name, office: emp.Office, title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value }) });
+            alert("Task Sent!"); refreshData();
+        }
+
+        function logout() { localStorage.clear(); window.location.href = "index.html"; }
+        document.getElementById('commentModal').addEventListener('hidden.bs.modal', () => { isModalOpen = false; refreshData(); });
+        setInterval(refreshData, 5000);
+        window.onload = refreshData;
+    </script>
 </body>
 </html>
