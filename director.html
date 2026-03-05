@@ -3,104 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Director Panel | Control Center</title>
+    <title>Director Panel | Task Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        body { background: #f0f2f5; font-family: 'Inter', sans-serif; }
-        .card { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .nav-custom { background: #2563eb; color: white; }
-        .mini-pic { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; border: 1px solid #dee2e6; }
-        .status-badge { font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; font-weight: bold; }
-        .bg-Assigned { background: #fef3c7; color: #92400e; }
-        .bg-Received { background: #dbeafe; color: #1e40af; }
-        .bg-Completed { background: #dcfce7; color: #166534; }
-        .table-responsive { max-height: 70vh; overflow-y: auto; }
-        .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); display:flex; justify-content:center; align-items:center; z-index:9999; flex-direction: column; }
-        .hidden { display: none !important; }
+        body { background: #f1f5f9; font-family: 'Inter', sans-serif; }
+        .navbar { background: #1e293b; color: white; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .status-pill { font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; font-weight: 600; }
+        .bg-assigned { background: #fef3c7; color: #92400e; }
+        .bg-received { background: #dbeafe; color: #1e40af; }
+        .bg-completed { background: #dcfce7; color: #166534; }
+        .chat-msg { padding: 8px 12px; border-radius: 15px; margin-bottom: 8px; font-size: 0.85rem; max-width: 85%; }
+        .msg-me { background: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg-them { background: #e2e8f0; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .emp-pic-sm { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; margin-right: 8px; }
     </style>
 </head>
 <body>
 
-<div id="loader" class="loading-overlay">
-    <div class="spinner-border text-primary mb-2"></div>
-    <div class="fw-bold text-primary">Syncing Database...</div>
-</div>
-
-<nav class="navbar nav-custom shadow-sm mb-4">
-    <div class="container">
-        <span class="navbar-brand fw-bold text-white"><i class="bi bi-shield-lock me-2"></i>Director Control</span>
-        <div class="d-flex align-items-center">
-            <span id="directorName" class="me-3 small text-white opacity-75"></span>
-            <button onclick="logout()" class="btn btn-light btn-sm fw-bold rounded-pill px-3">Logout</button>
-        </div>
+<nav class="navbar navbar-dark p-3 mb-4">
+    <div class="container-fluid">
+        <span class="navbar-brand fw-bold"><i class="bi bi-shield-lock me-2"></i> Director Control Panel</span>
+        <button class="btn btn-outline-light btn-sm" onclick="logout()">Logout</button>
     </div>
 </nav>
 
-<div class="container">
-    <div class="row">
-        <div class="col-lg-4 mb-4">
-            <div class="card p-4 sticky-top" style="top: 20px;">
-                <h5 class="fw-bold mb-3 border-bottom pb-2">Assign New Task</h5>
-                <form id="taskForm">
-                    <div class="mb-3">
-                        <label class="small fw-bold">Task Title</label>
-                        <input type="text" id="title" class="form-control" placeholder="Brief title" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="small fw-bold">Target Office</label>
-                        <select id="officeSelect" class="form-select" onchange="filterEmployees()" required>
-                            <option value="">-- Select Office --</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Finance">Finance</option>
-                            <option value="HR">HR</option>
-                            <option value="Operations">Operations</option>
-                            <option value="Executive">Executive</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="small fw-bold">Select Assignee</label>
-                        <select id="empSelect" class="form-select" disabled required>
-                            <option value="">-- Select Office First --</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="small fw-bold">Instructions</label>
-                        <textarea id="instructions" class="form-control" rows="3" placeholder="Details..."></textarea>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label class="small fw-bold text-muted"><i class="bi bi-paperclip"></i> Reference File (Optional)</label>
-                        <input type="file" id="fileInput" class="form-control form-control-sm">
-                    </div>
-
-                    <button type="submit" id="submitBtn" class="btn btn-primary w-100 py-2 fw-bold">
-                        <i class="bi bi-send me-2"></i>Dispatch Task
-                    </button>
-                </form>
+<div class="container-fluid">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3">Assign New Task</h5>
+                <div class="mb-3">
+                    <label class="small fw-bold">Select Employee</label>
+                    <select id="empSelect" class="form-select"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="small fw-bold">Task Title</label>
+                    <input type="text" id="taskTitle" class="form-control" placeholder="e.g., Monthly Report">
+                </div>
+                <div class="mb-3">
+                    <label class="small fw-bold">Instructions</label>
+                    <textarea id="taskInstructions" class="form-control" rows="3"></textarea>
+                </div>
+                <button onclick="createTask()" id="createBtn" class="btn btn-primary w-100 fw-bold">Send Task</button>
             </div>
         </div>
 
-        <div class="col-lg-8 mb-4">
+        <div class="col-lg-8">
             <div class="card p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="fw-bold m-0"><i class="bi bi-broadcast text-danger me-2"></i>Live Monitor</h5>
-                    <button onclick="initDirector()" class="btn btn-sm btn-outline-secondary rounded-pill"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold m-0">Live Task Monitor</h5>
+                    <button onclick="refreshData()" class="btn btn-sm btn-light border"><i class="bi bi-arrow-clockwise"></i></button>
                 </div>
                 <div class="table-responsive">
                     <table class="table align-middle">
-                        <thead class="table-light text-muted small">
+                        <thead class="table-light">
                             <tr>
-                                <th>TASK</th>
-                                <th>ASSIGNEE</th>
-                                <th>STATUS</th>
-                                <th>DATE</th>
+                                <th>Employee</th>
+                                <th>Task</th>
+                                <th>Status</th>
+                                <th>Discussion</th>
                             </tr>
                         </thead>
-                        <tbody id="taskTableBody"></tbody>
+                        <tbody id="taskTableBody">
+                            <tr><td colspan="4" class="text-center py-4">Loading data...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -108,121 +76,150 @@
     </div>
 </div>
 
+<div class="modal fade" id="commentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="fw-bold">Discussion Thread</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="commentThread" class="d-flex flex-column mb-3" style="height: 300px; overflow-y: auto; background: #f1f5f9; padding: 15px; border-radius: 10px;"></div>
+                <div class="input-group">
+                    <input type="text" id="commentInput" class="form-control" placeholder="Reply to employee...">
+                    <button class="btn btn-primary" onclick="submitComment()"><i class="bi bi-send"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
-    
-    // Global State
-    let state = { users: [], tasks: [], session: JSON.parse(localStorage.getItem('office_session')) };
+    const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec"; // USE THE SAME DEPLOY URL
+    let globalData = { users: [], tasks: [], comments: [] };
+    let activeTaskId = null;
+    let directorName = "Director"; // Or fetch from session if you have a director login
 
-    // Initial Security Check
-    if (!state.session || state.session.Role !== "Director") {
-        window.location.href = "index.html";
-    }
-
-    async function initDirector() {
-        document.getElementById('loader').classList.remove('hidden');
-        document.getElementById('directorName').textContent = `Admin: ${state.session.Name}`;
-        
+    async function refreshData() {
         try {
             const res = await fetch(API_URL);
-            const data = await res.json();
-            state.users = data.users;
-            state.tasks = data.tasks;
+            globalData = await res.json();
+            renderEmployees();
             renderTasks();
-        } catch(e) {
-            alert("Database connection failed.");
-        } finally {
-            document.getElementById('loader').classList.add('hidden');
-        }
+        } catch (e) { console.error("Refresh failed", e); }
     }
 
-    function filterEmployees() {
-        const selectedOffice = document.getElementById('officeSelect').value;
-        const empSelect = document.getElementById('empSelect');
-        
-        // Fast Filtering Algorithm
-        const filtered = state.users.filter(u => u.Office === selectedOffice && u.Role !== "Director");
-        
-        empSelect.innerHTML = '<option value="">-- Choose Employee --</option>' + 
-            filtered.map(u => `<option value="${u.ID}">${u.Name}</option>`).join('');
-        
-        empSelect.disabled = (filtered.length === 0);
+    function renderEmployees() {
+        const select = document.getElementById('empSelect');
+        const emps = globalData.users.filter(u => u.Role !== 'Director');
+        select.innerHTML = emps.map(u => `<option value="${u.ID}">${u.Name} (${u.Office})</option>`).join('');
     }
 
     function renderTasks() {
         const tbody = document.getElementById('taskTableBody');
-        if (state.tasks.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">No tasks in database.</td></tr>';
+        if (globalData.tasks.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">No tasks assigned yet.</td></tr>';
             return;
         }
 
-        tbody.innerHTML = [...state.tasks].reverse().map(t => {
-            const user = state.users.find(u => String(u.ID) === String(t.EmployeeID));
-            const avatar = user?.ProfilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.EmployeeName)}&background=random`;
-
+        tbody.innerHTML = globalData.tasks.reverse().map(t => {
+            const emp = globalData.users.find(u => String(u.ID) === String(t.EmployeeID)) || {};
+            const hasComments = globalData.comments.some(c => String(c.TaskID) === String(t.TaskID));
+            const statusClass = t.Status.toLowerCase();
+            
             return `
                 <tr>
                     <td>
-                        <div class="fw-bold text-dark mb-0">${t.Title}</div>
-                        <small class="text-muted" style="font-size:0.7rem">OFFICE: ${t.Office}</small>
-                    </td>
-                    <td>
                         <div class="d-flex align-items-center">
-                            <img src="${avatar}" class="mini-pic">
-                            <div class="small fw-semibold">${t.EmployeeName}</div>
+                            <img src="${emp.ProfilePic || 'https://via.placeholder.com/30'}" class="emp-pic-sm">
+                            <div>
+                                <div class="fw-bold small">${emp.Name || 'Unknown'}</div>
+                                <div class="text-muted" style="font-size:0.7rem">${emp.Office || ''}</div>
+                            </div>
                         </div>
                     </td>
-                    <td><span class="status-badge bg-${t.Status}">${t.Status}</span></td>
-                    <td class="text-muted small">${new Date(t.CreatedTS).toLocaleDateString()}</td>
-                </tr>`;
+                    <td><div class="small fw-bold">${t.Title}</div></td>
+                    <td><span class="status-pill bg-${statusClass}">${t.Status}</span></td>
+                    <td>
+                        <button onclick="openComments('${t.TaskID}')" class="btn btn-sm btn-light position-relative">
+                            <i class="bi bi-chat-left-text"></i>
+                            ${hasComments ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
+                        </button>
+                    </td>
+                </tr>
+            `;
         }).join('');
     }
 
-    document.getElementById('taskForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Syncing...';
+    async function openComments(taskId) {
+        activeTaskId = taskId;
+        const modal = new bootstrap.Modal(document.getElementById('commentModal'));
+        modal.show();
+        
+        // Filter comments for this task
+        const thread = globalData.comments.filter(c => String(c.TaskID) === String(taskId));
+        
+        document.getElementById('commentThread').innerHTML = thread.map(c => `
+            <div class="chat-msg ${c.SenderName === directorName ? 'msg-me' : 'msg-them'}">
+                <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
+                ${c.Message}
+            </div>
+        `).join('') || '<div class="text-center small text-muted">No messages yet.</div>';
+    }
 
-        const file = document.getElementById('fileInput').files[0];
-        let fileData = null, fileName = "", fileType = "";
+    async function submitComment() {
+        const msg = document.getElementById('commentInput').value;
+        if (!msg) return;
 
-        if (file) {
-            fileData = await new Promise(resolve => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result.split(',')[1]);
-                reader.readAsDataURL(file);
-            });
-            fileName = file.name;
-            fileType = file.type;
-        }
+        await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: "ADD_COMMENT",
+                taskId: activeTaskId,
+                senderName: directorName,
+                message: msg
+            })
+        });
+
+        document.getElementById('commentInput').value = '';
+        // Re-fetch everything to show the new message
+        await refreshData();
+        openComments(activeTaskId); 
+    }
+
+    async function createTask() {
+        const btn = document.getElementById('createBtn');
+        const empId = document.getElementById('empSelect').value;
+        const emp = globalData.users.find(u => String(u.ID) === String(empId));
 
         const payload = {
             action: "CREATE_TASK",
-            title: document.getElementById('title').value,
-            empId: document.getElementById('empSelect').value,
-            empName: document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text,
-            office: document.getElementById('officeSelect').value,
-            instructions: document.getElementById('instructions').value,
-            fileData, fileName, fileType
+            empId: empId,
+            empName: emp.Name,
+            office: emp.Office,
+            title: document.getElementById('taskTitle').value,
+            instructions: document.getElementById('taskInstructions').value
         };
 
-        try {
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-            alert("🚀 Task successfully dispatched!");
-            initDirector(); // Refresh live monitor
-            document.getElementById('taskForm').reset();
-        } catch(e) {
-            alert("Sync Error. Please try again.");
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-send me-2"></i>Dispatch Task';
-        }
-    };
+        btn.disabled = true;
+        btn.innerText = "Sending...";
+        
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+        
+        alert("Task Assigned Successfully!");
+        document.getElementById('taskTitle').value = "";
+        document.getElementById('taskInstructions').value = "";
+        btn.disabled = false;
+        btn.innerText = "Send Task";
+        refreshData();
+    }
 
     function logout() { localStorage.clear(); window.location.href = "index.html"; }
-    
-    window.onload = initDirector;
+
+    // Auto-refresh every 30 seconds
+    setInterval(refreshData, 30000);
+    window.onload = refreshData;
 </script>
 </body>
 </html>
