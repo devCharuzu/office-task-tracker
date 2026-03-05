@@ -112,36 +112,45 @@
     }
 
     async function register() {
-        const id = document.getElementById('regId').value.trim();
-        const name = document.getElementById('regName').value.trim();
-        const office = document.getElementById('regOffice').value;
-        const pass = document.getElementById('regPass').value.trim();
-        const btn = document.getElementById('regBtn');
+    const id = document.getElementById('regId').value.trim();
+    const name = document.getElementById('regName').value.trim();
+    const office = document.getElementById('regOffice').value;
+    const pass = document.getElementById('regPass').value.trim();
+    const btn = document.getElementById('regBtn');
 
-        if (!id || !name || !office || !pass) return alert("All fields are required");
+    if (!id || !name || !office || !pass) return alert("All fields are required");
 
-        btn.disabled = true;
-        btn.innerHTML = '<span class="loader"></span>';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loader"></span>';
 
-        try {
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: "REGISTER", id, name, designation: office, pass })
-            });
-            const result = await res.text();
-            if (result === "SUCCESS") {
-                alert("Registration successful!");
-                toggleAuth();
-            } else {
-                alert("ID already exists.");
-            }
-        } catch (e) {
-            alert("Registration failed.");
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = "Create Account";
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                action: "REGISTER", 
+                id: id, 
+                name: name, 
+                office: office, // Changed from 'designation' to 'office'
+                pass: pass 
+            })
+        });
+        const result = await res.text();
+        
+        if (result === "SUCCESS") {
+            alert("Registration successful! You can now log in.");
+            toggleAuth();
+        } else if (result === "EXISTS") {
+            alert("This Employee ID is already registered.");
+        } else {
+            alert("Error: " + result);
         }
+    } catch (e) {
+        alert("Registration failed. Check your connection or API deployment.");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = "Create Account";
     }
+}
 
     window.onload = () => {
         const session = localStorage.getItem('office_session');
