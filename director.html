@@ -12,7 +12,7 @@
         .sidebar { background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; width: 260px; z-index: 1000; }
         .mobile-nav { display: none; position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; z-index: 1001; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
         .main-content { margin-left: 260px; padding: 40px; min-height: 100vh; }
-        .card-custom { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: 0.3s; }
+        .card-custom { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .status-pill { font-size: 0.7rem; padding: 4px 10px; border-radius: 8px; font-weight: 700; text-transform: uppercase; }
         .bg-assigned { background: #fff7ed; color: #c2410c; }
         .bg-received { background: #eff6ff; color: #1d4ed8; }
@@ -31,7 +31,7 @@
     <aside class="sidebar p-4 d-none d-lg-block">
         <div class="d-flex align-items-center mb-5"><div class="bg-dark p-2 rounded-3 me-2"><i class="bi bi-shield-lock text-white"></i></div><span class="fw-bold fs-5">Director</span></div>
         <div class="mb-5 text-center">
-            <img id="dirPic" src="https://via.placeholder.com/80" class="rounded-circle mb-2" style="width:80px; height:80px; object-fit:cover;">
+            <img id="dirPic" src="https://via.placeholder.com/80" class="rounded-circle mb-2 shadow-sm" style="width:80px; height:80px; object-fit:cover;">
             <h6 id="dirNameDisplay" class="fw-bold m-0">---</h6>
         </div>
         <nav class="nav flex-column gap-2">
@@ -55,7 +55,11 @@
                     <div class="mb-3"><select id="empSelect" class="form-select border-0 bg-light rounded-3"></select></div>
                     <div class="mb-3"><input type="text" id="taskTitle" class="form-control border-0 bg-light rounded-3" placeholder="Title"></div>
                     <div class="mb-3"><textarea id="taskInstructions" class="form-control border-0 bg-light rounded-3" rows="2" placeholder="Instructions"></textarea></div>
-                    <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold">Send</button>
+                    <div class="mb-4">
+                        <label class="small fw-bold text-muted">Attachment</label>
+                        <input type="file" id="taskFile" class="form-control border-0 bg-light rounded-3 small">
+                    </div>
+                    <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold">Send Assignment</button>
                 </div>
             </div>
             <div class="col-xl-8">
@@ -70,6 +74,7 @@
     <div class="modal fade" id="profileModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+                <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Profile Settings</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-4 text-center">
                     <div class="position-relative d-inline-block mb-3">
                         <img id="editPreview" src="https://via.placeholder.com/100" class="rounded-circle shadow-sm" style="width:100px; height:100px; object-fit:cover;">
@@ -78,7 +83,7 @@
                     <input type="file" id="editPicInput" class="d-none" accept="image/*" onchange="previewAndCompress(this)">
                     <input type="text" id="editName" class="form-control mb-3 border-0 bg-light rounded-3" placeholder="Name">
                     <input type="password" id="editPass" class="form-control mb-3 border-0 bg-light rounded-3" placeholder="New Password">
-                    <button onclick="saveProfile()" id="saveBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold">Save Profile</button>
+                    <button onclick="saveProfile()" id="saveBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold">Update Profile</button>
                 </div>
             </div>
         </div>
@@ -103,6 +108,14 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
         let globalData = { users: [], tasks: [], comments: [] }, session = JSON.parse(localStorage.getItem('office_session')), compressedImg = null;
 
+        function updateUIElements() {
+            document.getElementById('dirNameDisplay').textContent = session.Name;
+            const picUrl = session.ProfilePic ? session.ProfilePic + '?t=' + new Date().getTime() : "https://via.placeholder.com/80";
+            document.getElementById('dirPic').src = picUrl;
+            document.getElementById('editPreview').src = picUrl;
+            document.getElementById('editName').value = session.Name;
+        }
+
         async function refreshData() {
             try {
                 const res = await fetch(API_URL); globalData = await res.json();
@@ -119,7 +132,7 @@
             document.getElementById('taskTableBody').innerHTML = globalData.tasks.slice().reverse().map(t => `
                 <tr class="border-bottom">
                     <td class="py-3"><div class="fw-bold small">${t.EmployeeName}</div></td>
-                    <td><div class="small fw-bold">${t.Title}</div></td>
+                    <td><div class="small fw-bold">${t.Title}</div>${t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="small text-primary"><i class="bi bi-link-45deg"></i> File</a>` : ''}</td>
                     <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
                     <td class="text-center"><button onclick="openChat('${t.TaskID}')" class="btn btn-light rounded-circle"><i class="bi bi-chat-dots"></i></button></td>
                 </tr>`).join('');
@@ -130,15 +143,12 @@
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const img = new Image();
-                    img.src = e.target.result;
+                    const img = new Image(); img.src = e.target.result;
                     img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 400;
-                        canvas.width = MAX_WIDTH;
-                        canvas.height = img.height * (MAX_WIDTH / img.width);
+                        const canvas = document.createElement('canvas'); const MAX = 400;
+                        canvas.width = MAX; canvas.height = img.height * (MAX / img.width);
                         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                        compressedImg = canvas.toDataURL('image/jpeg', 0.7);
+                        compressedImg = canvas.toDataURL('image/jpeg', 0.8);
                         document.getElementById('editPreview').src = compressedImg;
                     };
                 };
@@ -148,37 +158,40 @@
 
         async function saveProfile() {
             const btn = document.getElementById('saveBtn'); btn.disabled = true;
-            const payload = { 
-                action: "UPDATE_PROFILE", 
-                id: session.ID, 
-                name: document.getElementById('editName').value, 
-                pass: document.getElementById('editPass').value, 
-                fileData: compressedImg ? compressedImg.split(',')[1] : null, fileType: "image/jpeg" 
-            };
-            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ 
+                action: "UPDATE_PROFILE", id: session.ID, name: document.getElementById('editName').value, 
+                pass: document.getElementById('editPass').value, fileData: compressedImg ? compressedImg.split(',')[1] : null, fileType: "image/jpeg" 
+            })});
             const result = await res.json();
             if (result.status === "SUCCESS") {
                 session.Name = document.getElementById('editName').value;
                 if(result.newPic) session.ProfilePic = result.newPic;
                 localStorage.setItem('office_session', JSON.stringify(session));
-                location.reload();
+                updateUIElements();
+                bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
+                alert("Profile Updated!");
             }
+            btn.disabled = false;
         }
 
         async function createTask() {
-            const empId = document.getElementById('empSelect').value;
-            const emp = globalData.users.find(u => String(u.ID) === String(empId));
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CREATE_TASK", empId, empName: emp.Name, title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value }) });
-            alert("Task Sent"); refreshData();
+            const btn = document.getElementById('createBtn'); btn.disabled = true;
+            const fileInput = document.getElementById('taskFile');
+            let fileData = null, fileName = "";
+            if (fileInput.files[0]) {
+                fileName = fileInput.files[0].name;
+                fileData = await new Promise(r => { const reader = new FileReader(); reader.onload = () => r(reader.result.split(',')[1]); reader.readAsDataURL(fileInput.files[0]); });
+            }
+            const empId = document.getElementById('empSelect').value; const emp = globalData.users.find(u => String(u.ID) === String(empId));
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ 
+                action: "CREATE_TASK", empId, empName: emp.Name, title: document.getElementById('taskTitle').value, 
+                instructions: document.getElementById('taskInstructions').value, fileData, fileName 
+            })});
+            btn.disabled = false; alert("Task Dispatched!"); refreshData();
         }
 
         function logout() { localStorage.clear(); window.location.href = "index.html"; }
-        window.onload = () => { 
-            document.getElementById('dirNameDisplay').textContent = session.Name; 
-            document.getElementById('dirPic').src = session.ProfilePic || "https://via.placeholder.com/80";
-            document.getElementById('editName').value = session.Name;
-            refreshData(); 
-        };
+        window.onload = () => { updateUIElements(); refreshData(); };
         setInterval(refreshData, 6000);
     </script>
 </body>
