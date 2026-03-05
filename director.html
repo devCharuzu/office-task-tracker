@@ -97,25 +97,21 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
     let globalData = { users: [], tasks: [], comments: [] };
     let activeTaskId = null;
-    let directorName = "Director"; 
     let isSending = false;
     let isModalOpen = false;
-    let lastCommentCount = 0;
+    let taskReadStatus = {}; 
 
-    async function refreshData(isSilent = false) {
+    async function refreshData() {
         try {
             const res = await fetch(API_URL);
-            const data = await res.json();
-            globalData = data;
-
-            if (!isSilent || data.comments.length !== lastCommentCount) {
-                lastCommentCount = data.comments.length;
-                renderEmployees();
-                renderTasks();
-            }
+            globalData = await res.json();
+            renderEmployees();
+            renderTasks();
 
             if (isModalOpen && activeTaskId) {
-                renderThread(data.comments.filter(c => String(c.TaskID) === String(activeTaskId)));
+                const thread = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
+                renderThread(thread);
+                taskReadStatus[activeTaskId] = thread.length; // Mark as read
             }
         } catch (e) { console.error("Refresh failed", e); }
     }
@@ -130,16 +126,20 @@
         const tbody = document.getElementById('taskTableBody');
         tbody.innerHTML = globalData.tasks.slice().reverse().map(t => {
             const emp = globalData.users.find(u => String(u.ID) === String(t.EmployeeID)) || {};
-            const hasComments = globalData.comments.some(c => String(c.TaskID) === String(t.TaskID));
+            const thread = globalData.comments.filter(c => String(c.TaskID) === String(t.TaskID));
+            const currentCount = thread.length;
+            const lastReadCount = taskReadStatus[t.TaskID] || 0;
+            const hasNew = currentCount > lastReadCount;
+
             return `
                 <tr>
                     <td><div class="d-flex align-items-center"><img src="${emp.ProfilePic || ''}" class="emp-pic-sm"><div><div class="fw-bold small">${emp.Name || 'Staff'}</div></div></div></td>
                     <td><div class="small fw-bold">${t.Title}</div></td>
                     <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
                     <td class="text-center">
-                        <button onclick="openComments('${t.TaskID}')" class="btn btn-sm btn-light border-0 position-relative">
+                        <button onclick="openComments('${t.TaskID}', ${currentCount})" class="btn btn-sm btn-light border-0 position-relative rounded-pill px-3">
                             <i class="bi bi-chat-left-dots text-primary"></i>
-                            ${hasComments ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
+                            ${hasNew ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
                         </button>
                     </td>
                 </tr>
@@ -147,61 +147,57 @@
         }).join('');
     }
 
-    async function openComments(taskId) {
+    async function openComments(taskId, count) {
         activeTaskId = taskId;
+        taskReadStatus[taskId] = count;
         isModalOpen = true;
         const modal = new bootstrap.Modal(document.getElementById('commentModal'));
         modal.show();
-        refreshData(false);
+        refreshData();
     }
 
     function renderThread(thread) {
         const threadDiv = document.getElementById('commentThread');
-        const currentHtml = threadDiv.innerHTML;
         const newHtml = thread.map(c => `
-            <div class="chat-msg ${c.SenderName === directorName ? 'msg-me' : 'msg-them'}">
+            <div class="chat-msg ${c.SenderName === 'Director' ? 'msg-me' : 'msg-them'}">
                 <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
                 ${c.Message}
             </div>
         `).join('') || '<div class="text-center mt-5 small text-muted">No messages yet.</div>';
 
-        if (currentHtml !== newHtml) {
+        if (threadDiv.innerHTML !== newHtml) {
             threadDiv.innerHTML = newHtml;
             threadDiv.scrollTop = threadDiv.scrollHeight;
         }
     }
 
     async function submitComment() {
-        const btn = document.getElementById('sendCommentBtn');
-        if (isSending) return;
+        const input = document.getElementById('commentInput');
+        if (!input.value.trim() || isSending) return;
         isSending = true;
-        btn.disabled = true;
         await fetch(API_URL, { 
             method: 'POST', 
-            body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: directorName, message: document.getElementById('commentInput').value }) 
+            body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: "Director", message: input.value.trim() }) 
         });
-        document.getElementById('commentInput').value = '';
-        isSending = false;
-        btn.disabled = false;
-        refreshData(false);
+        input.value = ''; isSending = false;
+        refreshData();
     }
 
     async function createTask() {
         const empId = document.getElementById('empSelect').value;
         const emp = globalData.users.find(u => String(u.ID) === String(empId));
         await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CREATE_TASK", empId, empName: emp.Name, office: emp.Office, title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value }) });
-        alert("Task Sent!");
-        refreshData(false);
+        alert("Task Sent!"); refreshData();
     }
 
     function logout() { localStorage.clear(); window.location.href = "index.html"; }
 
     document.getElementById('commentModal').addEventListener('hidden.bs.modal', () => {
         isModalOpen = false;
-        activeTaskId = null;
+        refreshData(); // Clear dot immediately after closing
     });
 
-    setInterval(() => refreshData(true), 5000);
+    setInterval(refreshData, 5000);
     window.onload = () => refreshData();
 </script>
 </body>
