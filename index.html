@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { background: #f0f2f5; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; align-items: center; }
-        .auth-card { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; }
+        .auth-card { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; background: white; }
         .btn-primary { background: #2563eb; border: none; padding: 12px; font-weight: 600; border-radius: 10px; }
         .form-control, .form-select { padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; }
         .hidden { display: none !important; }
@@ -25,7 +25,7 @@
                 <p class="text-muted mb-4 small text-center">Log in to manage your tasks.</p>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Employee ID</label>
-                    <input type="text" id="loginId" class="form-control" placeholder="e.g. EMP-01">
+                    <input type="text" id="loginId" class="form-control" placeholder="e.g. 001">
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Password</label>
@@ -42,18 +42,25 @@
             <div id="registerBox" class="hidden">
                 <h2 class="fw-bold mb-1 text-center">Create Account</h2>
                 <p class="text-muted mb-4 small text-center">Join the task tracking system.</p>
-                <input type="text" id="regName" class="form-control mb-3" placeholder="Full Name">
-                <input type="text" id="regId" class="form-control mb-3" placeholder="Employee ID (e.g. EMP-01)">
-                <select id="regOffice" class="form-select mb-3">
-                    <option value="">-- Select Office --</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Finance">Finance</option>
-                    <option value="HR">HR</option>
-                    <option value="Operations">Operations</option>
-                </select>
-                <input type="password" id="regPass" class="form-control mb-3" placeholder="Create Password">
-                <button onclick="register()" id="regBtn" class="btn btn-primary w-100 mb-3>
-
+                <div class="mb-3">
+                    <input type="text" id="regName" class="form-control" placeholder="Full Name">
+                </div>
+                <div class="mb-3">
+                    <input type="text" id="regId" class="form-control" placeholder="Employee ID (e.g. 002)">
+                </div>
+                <div class="mb-3">
+                    <select id="regOffice" class="form-select">
+                        <option value="">-- Select Office --</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Finance">Finance</option>
+                        <option value="HR">HR</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Executive">Executive</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <input type="password" id="regPass" class="form-control" placeholder="Create Password">
+                </div>
                 <button onclick="register()" id="regBtn" class="btn btn-primary w-100 mb-3">Create Account</button>
                 <p class="text-center small mb-0"><a href="#" onclick="toggleAuth()" class="text-decoration-none fw-bold">Back to Login</a></p>
             </div>
@@ -62,7 +69,7 @@
 </div>
 
 <script>
-    // CRITICAL: Replace with your actual Web App URL from the 'Deploy' button in Apps Script
+    // CRITICAL: Ensure this matches your latest 'New Version' deployment URL
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
 
     function toggleAuth() {
@@ -77,7 +84,6 @@
 
     /**
      * LOGIN LOGIC
-     * Fetches all users from GSheets and validates credentials locally
      */
     async function login() {
         const idInput = document.getElementById('loginId').value.trim();
@@ -90,33 +96,36 @@
         btn.innerHTML = '<span class="loader"></span> Verifying...';
 
         try {
-            const res = await fetch(API_URL);
-            const data = await res.json();
+            // Updated to use the secure POST login method
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: "LOGIN", 
+                    id: idInput, 
+                    pass: passInput 
+                })
+            });
             
-            // Search for user with case-insensitive ID match
-            const user = data.users.find(u => 
-                String(u.id).toLowerCase() === idInput.toLowerCase() && 
-                String(u.password) === passInput
-            );
+            const result = await res.json();
 
-            if (user) {
-                // Save session to localStorage
-                localStorage.setItem('office_session', JSON.stringify(user));
+            if (result.success) {
+                // IMPORTANT: Save the user object exactly as returned by GSheets
+                localStorage.setItem('office_session', JSON.stringify(result.user));
                 
-                // Redirect based on role
-                if (user.role === "Director") {
+                // Redirect based on Role (Capitalized as per GSheet headers)
+                if (result.user.Role === "Director") {
                     window.location.href = "director.html";
                 } else {
                     window.location.href = "dashboard.html";
                 }
             } else {
-                alert("❌ Invalid Credentials. Please try again.");
+                alert("❌ Invalid ID or Password.");
                 btn.disabled = false;
                 btn.innerText = "Sign In";
             }
         } catch (e) {
             console.error(e);
-            alert("Connection error. Ensure your script is deployed as 'Anyone'.");
+            alert("Connection error. Check console for details.");
             btn.disabled = false;
             btn.innerText = "Sign In";
         }
@@ -124,7 +133,6 @@
 
     /**
      * REGISTRATION LOGIC
-     * Sends new user data to Apps Script doPost()
      */
     async function register() {
         const id = document.getElementById('regId').value.trim();
@@ -142,35 +150,38 @@
             action: "REGISTER",
             id: id,
             name: name,
-            designation: office,
+            designation: office, // Maps to 'Office' in GSheets
             pass: pass
         };
 
         try {
-            // We use 'text/plain' and 'no-cors' for the most reliable POST to GAS
-            await fetch(API_URL, {
+            const res = await fetch(API_URL, {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(payload)
             });
-
-            // Since 'no-cors' doesn't return readable text, we alert and reload
-            alert("✅ Registration request sent! Please try logging in.");
-            location.reload();
             
+            const result = await res.text();
+
+            if (result === "SUCCESS") {
+                alert("✅ Registration successful! You can now log in.");
+                toggleAuth();
+            } else if (result === "DUPLICATE") {
+                alert("❌ This Employee ID is already registered.");
+            }
         } catch (e) {
-            alert("Registration failed. Check your internet connection.");
+            console.error(e);
+            alert("Registration failed. Please try again.");
+        } finally {
             btn.disabled = false;
             btn.innerText = "Create Account";
         }
     }
 
-    // Auto-login check: If session exists, redirect away from login page
+    // Auto-login check
     window.onload = () => {
         const session = JSON.parse(localStorage.getItem('office_session'));
         if (session) {
-            window.location.href = (session.role === "Director") ? "director.html" : "dashboard.html";
+            window.location.href = (session.Role === "Director") ? "director.html" : "dashboard.html";
         }
     };
 </script>
