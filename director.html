@@ -161,17 +161,39 @@
             } catch (e) { console.error("Sync failed"); }
         }
 
-        function renderTasks(tasks, id, isArch = false) {
-            document.getElementById(id).innerHTML = tasks.reverse().map(t => `
-                <tr class="border-bottom">
-                    <td class="py-3"><b>${t.EmployeeName}</b><br><small class="text-muted">${t.Title}</small></td>
-                    <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary rounded-circle me-1" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots"></i></button>
-                        <button class="btn btn-sm btn-light rounded-circle" onclick="toggleArch('${t.TaskID}', ${!isArch})"><i class="bi bi-${isArch?'arrow-up':'archive'}"></i></button>
-                    </td>
-                </tr>`).join('') || '<tr><td colspan="3" class="text-center py-4">No records.</td></tr>';
-        }
+    function renderTasks(tasks, id, isArch = false) {
+    const container = document.getElementById(id);
+    
+    container.innerHTML = tasks.reverse().map(t => {
+        // Check if there is a file link and create the HTML for the icon
+        const fileIcon = t.FileLink 
+            ? `<a href="${t.FileLink}" target="_blank" class="text-primary ms-2" title="View Attachment">
+                 <i class="bi bi-paperclip"></i>
+               </a>` 
+            : '';
+
+        return `
+            <tr class="border-bottom">
+                <td class="py-3">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <b>${t.EmployeeName}</b> ${fileIcon}<br>
+                            <small class="text-muted">${t.Title}</small>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-outline-primary rounded-circle me-1" onclick="openChat('${t.TaskID}', '${t.Title}')">
+                        <i class="bi bi-chat-dots"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light rounded-circle" onclick="toggleArch('${t.TaskID}', ${!isArch})">
+                        <i class="bi bi-${isArch ? 'arrow-up' : 'archive'}"></i>
+                    </button>
+                </td>
+            </tr>`;
+    }).join('') || '<tr><td colspan="3" class="text-center py-4">No records.</td></tr>';
+}
 
         function openChat(taskId, title) {
             activeTaskId = taskId;
