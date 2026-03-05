@@ -10,15 +10,24 @@
     <style>
         :root { --messenger-blue: #0084ff; --messenger-bg: #f0f2f5; --sidebar-width: 280px; }
         body { background: #f3f4f6; font-family: 'Inter', sans-serif; margin: 0; }
-        #globalLoader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        
+        #globalLoader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); display: none;
+            flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
+        }
+
         .sidebar { background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; width: var(--sidebar-width); z-index: 1000; padding: 30px; }
         .main-content { margin-left: var(--sidebar-width); padding: 40px; min-height: 100vh; transition: 0.3s; }
+        
         .mobile-nav { display: none; }
+
         .card-custom { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 20px; }
         .status-pill { font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
         .bg-assigned { background: #fff7ed; color: #c2410c; }
         .bg-received { background: #eff6ff; color: #1d4ed8; }
         .bg-completed { background: #f0fdf4; color: #15803d; }
+
         .chat-modal-body { height: 500px; display: flex; flex-direction: column; background: #fff; }
         .chat-container { flex-grow: 1; overflow-y: auto; padding: 20px; background: var(--messenger-bg); display: flex; flex-direction: column; }
         .msg-bubble { padding: 10px 16px; border-radius: 18px; font-size: 0.9rem; max-width: 85%; margin-bottom: 10px; }
@@ -28,7 +37,14 @@
 
         @media (max-width: 767px) {
             .sidebar { display: none !important; }
-            .mobile-nav { display: flex !important; justify-content: space-around; align-items: center; position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: white; border-top: 1px solid #e5e7eb; z-index: 2000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+            .mobile-nav { 
+                display: flex !important; 
+                justify-content: space-around; 
+                align-items: center;
+                position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
+                background: white; border-top: 1px solid #e5e7eb; z-index: 2000; 
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            }
             .mobile-nav a { flex: 1; text-align: center; color: #6b7280; text-decoration: none; font-size: 1.2rem; }
             .mobile-nav a.active { color: var(--messenger-blue); }
             .main-content { margin-left: 0 !important; padding: 20px 20px 100px 20px !important; }
@@ -39,7 +55,7 @@
 
     <div id="globalLoader">
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-        <p class="mt-3 fw-bold text-primary">Processing...</p>
+        <p class="mt-3 fw-bold text-primary">Syncing...</p>
     </div>
 
     <aside class="sidebar">
@@ -107,27 +123,26 @@
 
     <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-content border-0 rounded-4">
                 <div class="modal-header border-0 shadow-sm px-4 py-3">
-                    <h6 class="fw-bold m-0">Edit Assignment Details</h6>
+                    <h6 class="fw-bold m-0">Edit Assignment</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <input type="hidden" id="editTaskId">
                     <div class="mb-3">
-                        <label class="small fw-bold text-muted">Task Title</label>
+                        <label class="small fw-bold text-muted">Title</label>
                         <input type="text" id="editTitle" class="form-control bg-light border-0">
                     </div>
                     <div class="mb-3">
                         <label class="small fw-bold text-muted">Instructions</label>
                         <textarea id="editInstructions" class="form-control bg-light border-0" rows="4"></textarea>
                     </div>
-                    <div class="mb-4">
-                        <label class="small fw-bold text-muted">Replace Attachment (Optional)</label>
-                        <input type="file" id="editFile" class="form-control bg-light border-0 small">
-                        <small id="currentFileLabel" class="text-primary mt-1 d-block" style="font-size: 0.75rem;"></small>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Replace File (Optional)</label>
+                        <input type="file" id="editTaskFile" class="form-control bg-light border-0 small">
                     </div>
-                    <button id="updateBtn" onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Save Changes</button>
+                    <button onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Task</button>
                 </div>
             </div>
         </div>
@@ -147,10 +162,11 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const API_URL = "YOUR_APP_SCRIPT_URL_HERE"; 
+        const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec"; 
         let session = JSON.parse(localStorage.getItem('office_session')), 
             globalData = {users:[], tasks:[], comments:[]}, 
-            activeTaskId = null, lastDataHash = "";
+            activeTaskId = null, 
+            lastDataHash = "";
 
         if(!session || session.Role !== "Director") window.location.href = "index.html";
 
@@ -187,12 +203,16 @@
                         <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
                         <td class="text-end">
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                                <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
                                     <li><a class="dropdown-item small" href="#" onclick="openEditModal('${t.TaskID}')"><i class="bi bi-pencil me-2"></i> Edit Task</a></li>
                                     <li><a class="dropdown-item small text-primary" href="#" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots me-2"></i> Chat</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item small" href="#" onclick="toggleArch('${t.TaskID}', ${!isArch})"><i class="bi bi-${isArch?'arrow-up':'archive'} me-2"></i> ${isArch?'Restore':'Archive'}</a></li>
+                                    <li><a class="dropdown-item small" href="#" onclick="toggleArch('${t.TaskID}', ${!isArch})">
+                                        <i class="bi bi-${isArch?'arrow-up':'archive'} me-2"></i> ${isArch?'Restore':'Archive'}
+                                    </a></li>
                                 </ul>
                             </div>
                         </td>
@@ -206,67 +226,102 @@
             document.getElementById('editTaskId').value = task.TaskID;
             document.getElementById('editTitle').value = task.Title;
             document.getElementById('editInstructions').value = task.Instructions;
-            document.getElementById('editFile').value = ""; // Reset file input
-            document.getElementById('currentFileLabel').innerText = task.FileLink ? "📄 Current file attached" : "No file attached";
+            document.getElementById('editTaskFile').value = "";
             new bootstrap.Modal(document.getElementById('editModal')).show();
         }
 
         async function saveTaskEdit() {
             const taskId = document.getElementById('editTaskId').value;
-            const btn = document.getElementById('updateBtn');
-            const fInp = document.getElementById('editFile');
+            const newTitle = document.getElementById('editTitle').value;
+            const newInstr = document.getElementById('editInstructions').value;
+            const fInp = document.getElementById('editTaskFile');
             
-            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Updating...';
             showLoader(true);
-
             let fData = null, fName = "";
             if (fInp.files[0]) {
                 fName = fInp.files[0].name;
                 fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
             }
 
-            try {
-                await fetch(API_URL, {method:'POST', body: JSON.stringify({
-                    action: "EDIT_TASK", 
-                    taskId: taskId, 
-                    title: document.getElementById('editTitle').value, 
-                    instructions: document.getElementById('editInstructions').value,
-                    fileData: fData, 
-                    fileName: fName
-                })});
-                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
-                await refresh();
-            } catch (e) { alert("Update failed"); }
-            finally { 
-                btn.disabled = false; btn.innerText = "Update Task";
-                showLoader(false); 
-            }
+            await fetch(API_URL, {method:'POST', body: JSON.stringify({
+                action: "EDIT_TASK", 
+                taskId, 
+                title: newTitle, 
+                instructions: newInstr,
+                fileData: fData,
+                fileName: fName
+            })});
+            
+            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+            await refresh();
+            showLoader(false);
         }
 
         async function createTask() {
             const empId = document.getElementById('empSelect').value;
             const selectedEmp = globalData.users.find(u => String(u.ID) === String(empId));
             const status = selectedEmp ? (selectedEmp.Status || 'Available') : 'Available';
-            if (status !== 'Available') { if (!confirm(`⚠️ ${selectedEmp.Name} is "${status}". Proceed?`)) return; }
-            const btn = document.getElementById('createBtn'); const fInp = document.getElementById('taskFile');
+            if (status !== 'Available') {
+                const proceed = confirm(`⚠️ ATTENTION: ${selectedEmp.Name} is currently "${status}". Proceed anyway?`);
+                if (!proceed) return;
+            }
+            const btn = document.getElementById('createBtn');
+            const fInp = document.getElementById('taskFile');
             btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
             showLoader(true);
             let fData = null, fName = "";
-            if (fInp.files[0]) { fName = fInp.files[0].name; fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); }); }
-            await fetch(API_URL, {method:'POST', body: JSON.stringify({ action: "CREATE_TASK", empId: empId, empName: selectedEmp.Name, title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value, fileData: fData, fileName: fName })});
+            if (fInp.files[0]) {
+                fName = fInp.files[0].name;
+                fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
+            }
+            await fetch(API_URL, {method:'POST', body: JSON.stringify({
+                action: "CREATE_TASK", empId: empId, empName: selectedEmp.Name,
+                title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value,
+                fileData: fData, fileName: fName
+            })});
             btn.disabled = false; btn.innerText = 'Dispatch Task';
-            document.getElementById('taskTitle').value = ""; document.getElementById('taskInstructions').value = ""; fInp.value = ""; showLoader(false); refresh();
+            document.getElementById('taskTitle').value = ""; document.getElementById('taskInstructions').value = "";
+            fInp.value = ""; showLoader(false); refresh();
         }
 
-        function openChat(taskId, title) { activeTaskId = taskId; document.getElementById('chatTaskTitle').innerText = title; renderComments(); new bootstrap.Modal(document.getElementById('chatModal')).show(); }
+        function openChat(taskId, title) {
+            activeTaskId = taskId;
+            document.getElementById('chatTaskTitle').innerText = title;
+            renderComments();
+            new bootstrap.Modal(document.getElementById('chatModal')).show();
+        }
+
         function renderComments() {
             const container = document.getElementById('chatBody');
             const comments = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
-            container.innerHTML = `<div class="chat-container" id="chatScroll">${comments.map(c => `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`).join('')}</div><div class="p-3 bg-white border-top"><div class="input-group"><input type="text" id="chatInp" class="form-control border-0 bg-light rounded-pill px-3" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg()"><button id="sendBtn" class="btn btn-primary rounded-circle ms-2" onclick="sendMsg()"><i class="bi bi-send-fill"></i></button></div></div>`;
+            container.innerHTML = `
+                <div class="chat-container" id="chatScroll">
+                    ${comments.map(c => `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`).join('')}
+                </div>
+                <div class="p-3 bg-white border-top">
+                    <div class="input-group">
+                        <input type="text" id="chatInp" class="form-control border-0 bg-light rounded-pill px-3" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg()">
+                        <button id="sendBtn" class="btn btn-primary rounded-circle ms-2" onclick="sendMsg()"><i class="bi bi-send-fill"></i></button>
+                    </div>
+                </div>`;
             const s = document.getElementById('chatScroll'); if(s) s.scrollTop = s.scrollHeight;
         }
-        async function sendMsg() { const inp = document.getElementById('chatInp'); if(!inp.value.trim()) return; const btn = document.getElementById('sendBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span>'; await fetch(API_URL, {method:'POST', body: JSON.stringify({action:"ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value})}); await refresh(); inp.value = ""; btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>'; }
-        async function toggleArch(taskId, val) { showLoader(true); await fetch(API_URL, {method:'POST', body: JSON.stringify({action:"TOGGLE_ARCHIVE", taskId, archived: val})}); await refresh(); showLoader(false); }
+
+        async function sendMsg() {
+            const inp = document.getElementById('chatInp'); if(!inp.value.trim()) return;
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
+            await fetch(API_URL, {method:'POST', body: JSON.stringify({action:"ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value})});
+            await refresh();
+            inp.value = ""; btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>';
+        }
+
+        async function toggleArch(taskId, val) { 
+            showLoader(true);
+            await fetch(API_URL, {method:'POST', body: JSON.stringify({action:"TOGGLE_ARCHIVE", taskId, archived: val})}); 
+            await refresh(); showLoader(false);
+        }
+
         function logout() { localStorage.clear(); window.location.href="index.html"; }
         window.onload = () => { if(session) document.getElementById('dirNameDisplay').innerText = session.Name; refresh(); };
         setInterval(() => refresh(true), 15000);
