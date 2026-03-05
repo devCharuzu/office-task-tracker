@@ -178,29 +178,64 @@
             }).join('') || '<tr><td colspan="3" class="text-center py-4">No data.</td></tr>';
         }
 
-        async function createTask() {
-            const btn = document.getElementById('createBtn');
-            const fInp = document.getElementById('taskFile');
-            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
-            showLoader(true);
+async function createTask() {
+    const empId = document.getElementById('empSelect').value;
+    const selectedEmp = globalData.users.find(u => String(u.ID) === String(empId));
+    const status = selectedEmp ? (selectedEmp.Status || 'Available') : 'Available';
 
-            let fData = null, fName = "";
-            if (fInp.files[0]) {
-                fName = fInp.files[0].name;
-                fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
-            }
+    // --- NEW: Presence Validation Logic ---
+    if (status !== 'Available') {
+        const proceed = confirm(`⚠️ ATTENTION: ${selectedEmp.Name} is currently marked as "${status}". \n\nAre you sure you want to assign this task anyway?`);
+        if (!proceed) return; // Stop the function if Director clicks "Cancel"
+    }
 
-            await fetch(API_URL, {method:'POST', body: JSON.stringify({
-                action: "CREATE_TASK", empId: document.getElementById('empSelect').value,
-                empName: globalData.users.find(u=>u.ID==document.getElementById('empSelect').value).Name,
-                title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value,
-                fileData: fData, fileName: fName
-            })});
+    const btn = document.getElementById('createBtn');
+    const fInp = document.getElementById('taskFile');
+    
+    // UI Feedback
+    btn.disabled = true; 
+    btn.innerHTML = '<span class="spinner-border spinner-btn me-2"></span> Dispatching...';
+    showLoader(true);
 
-            btn.disabled = false; btn.innerText = 'Dispatch Task';
-            fInp.value = ""; showLoader(false); refresh();
+    try {
+        let fData = null, fName = "";
+        if (fInp.files[0]) {
+            fName = fInp.files[0].name;
+            fData = await new Promise(r => { 
+                const rd = new FileReader(); 
+                rd.onload = () => r(rd.result.split(',')[1]); 
+                rd.readAsDataURL(fInp.files[0]); 
+            });
         }
 
+        const response = await fetch(API_URL, {
+            method:'POST', 
+            body: JSON.stringify({
+                action: "CREATE_TASK", 
+                empId: empId,
+                empName: selectedEmp.Name,
+                title: document.getElementById('taskTitle').value, 
+                instructions: document.getElementById('taskInstructions').value,
+                fileData: fData, 
+                fileName: fName
+            })
+        });
+
+        if (response.ok) {
+            // Reset form on success
+            document.getElementById('taskTitle').value = "";
+            document.getElementById('taskInstructions').value = "";
+            fInp.value = "";
+            await refresh();
+        }
+    } catch (e) {
+        alert("Error dispatching task. Please try again.");
+    } finally {
+        btn.disabled = false; 
+        btn.innerText = 'Dispatch Task';
+        showLoader(false);
+    }
+}
         function openChat(taskId, title) {
             activeTaskId = taskId;
             document.getElementById('chatTaskTitle').innerText = title;
