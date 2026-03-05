@@ -90,10 +90,11 @@
     let session = JSON.parse(localStorage.getItem('office_session'));
     let activeTaskId = null;
     let isSending = false;
+    let lastCommentCount = 0; 
+    let isModalOpen = false;
 
     if (!session) window.location.href = "index.html";
 
-    // 1. UI LOADERS
     function updateSidebarUI() {
         document.getElementById('userNameDisplay').textContent = session.Name;
         document.getElementById('userIdDisplay').textContent = `ID: ${session.ID}`;
@@ -105,114 +106,117 @@
         document.getElementById('editName').value = session.Name;
     }
 
-    async function loadTasks() {
-        const container = document.getElementById('taskContainer');
+    async function loadTasks(isSilent = false) {
         try {
             const res = await fetch(API_URL);
             const data = await res.json();
             const myTasks = data.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
             
-            container.innerHTML = myTasks.reverse().map(t => {
-                const hasComments = data.comments.some(c => String(c.TaskID) === String(t.TaskID));
-                return `
-                    <div class="col-12">
-                        <div class="card task-card p-3 shadow-sm status-${t.Status}">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <span class="badge ${t.Status==='Assigned'?'bg-warning text-dark':(t.Status==='Received'?'bg-primary':'bg-success')} mb-2">${t.Status}</span>
-                                    <h6 class="fw-bold mb-1">${t.Title}</h6>
-                                    <p class="small text-muted mb-0">${t.Instructions || ''}</p>
-                                </div>
-                                <div class="text-end">
-                                    <button onclick="openComments('${t.TaskID}')" class="btn btn-sm btn-outline-secondary position-relative">
-                                        <i class="bi bi-chat-dots"></i> Concern
-                                        ${hasComments ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
-                                    </button>
-                                    <div class="mt-2" id="btns-${t.TaskID}">
-                                        ${t.Status === 'Assigned' ? `<button onclick="updateStatus('${t.TaskID}', 'Received')" class="btn btn-primary btn-sm rounded-pill px-3">Accept</button>` : ''}
-                                        ${t.Status === 'Received' ? `<button onclick="updateStatus('${t.TaskID}', 'Completed')" class="btn btn-success btn-sm rounded-pill px-3">Mark Done</button>` : ''}
-                                    </div>
+            // Re-render tasks only if not silent OR if comment count changed
+            const currentComments = data.comments.length;
+            if (!isSilent || currentComments !== lastCommentCount) {
+                lastCommentCount = currentComments;
+                renderTasksUI(myTasks, data.comments);
+            }
+
+            // Real-time chat update if modal is open
+            if (isModalOpen && activeTaskId) {
+                updateChatThreadUI(data.comments.filter(c => String(c.TaskID) === String(activeTaskId)));
+            }
+        } catch(e) { console.error("Real-time sync failed", e); }
+    }
+
+    function renderTasksUI(tasks, allComments) {
+        document.getElementById('taskContainer').innerHTML = tasks.reverse().map(t => {
+            const taskComments = allComments.filter(c => String(c.TaskID) === String(t.TaskID));
+            const hasComments = taskComments.length > 0;
+            return `
+                <div class="col-12">
+                    <div class="card task-card p-3 shadow-sm status-${t.Status}">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <span class="badge ${t.Status==='Assigned'?'bg-warning text-dark':(t.Status==='Received'?'bg-primary':'bg-success')} mb-2">${t.Status}</span>
+                                <h6 class="fw-bold mb-1">${t.Title}</h6>
+                                <p class="small text-muted mb-0">${t.Instructions || ''}</p>
+                            </div>
+                            <div class="text-end">
+                                <button onclick="openComments('${t.TaskID}')" class="btn btn-sm btn-outline-secondary position-relative">
+                                    <i class="bi bi-chat-dots"></i> Concern
+                                    ${hasComments ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
+                                </button>
+                                <div class="mt-2">
+                                    ${t.Status === 'Assigned' ? `<button onclick="updateStatus('${t.TaskID}', 'Received')" class="btn btn-primary btn-sm rounded-pill px-3">Accept</button>` : ''}
+                                    ${t.Status === 'Received' ? `<button onclick="updateStatus('${t.TaskID}', 'Completed')" class="btn btn-success btn-sm rounded-pill px-3">Mark Done</button>` : ''}
                                 </div>
                             </div>
                         </div>
                     </div>
-                `;
-            }).join('') || '<div class="text-center py-5 text-muted">No tasks assigned yet.</div>';
-        } catch(e) { container.innerHTML = "Error loading tasks."; }
+                </div>
+            `;
+        }).join('') || '<div class="text-center py-5 text-muted">No tasks assigned yet.</div>';
     }
 
-    // 2. COMMENT LOGIC
     async function openComments(taskId) {
         activeTaskId = taskId;
+        isModalOpen = true;
         const modal = new bootstrap.Modal(document.getElementById('commentModal'));
         modal.show();
-        document.getElementById('commentThread').innerHTML = '<div class="text-center mt-5 small text-muted">Loading messages...</div>';
-        await refreshThreadOnly();
+        loadTasks(false); 
     }
 
-    async function refreshThreadOnly() {
+    function updateChatThreadUI(thread) {
         const threadDiv = document.getElementById('commentThread');
-        try {
-            const res = await fetch(API_URL);
-            const data = await res.json();
-            const thread = data.comments.filter(c => String(c.TaskID) === String(activeTaskId));
-            
-            threadDiv.innerHTML = thread.map(c => `
-                <div class="chat-msg ${c.SenderName === session.Name ? 'msg-me' : 'msg-them'}">
-                    <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
-                    ${c.Message}
-                </div>
-            `).join('') || '<div class="text-center mt-5 small text-muted">No messages yet. Start the conversation.</div>';
-            
+        const currentHtml = threadDiv.innerHTML;
+        const newHtml = thread.map(c => `
+            <div class="chat-msg ${c.SenderName === session.Name ? 'msg-me' : 'msg-them'}">
+                <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
+                ${c.Message}
+            </div>
+        `).join('') || '<div class="text-center mt-5 small text-muted">No messages yet.</div>';
+
+        if (currentHtml !== newHtml) {
+            threadDiv.innerHTML = newHtml;
             threadDiv.scrollTop = threadDiv.scrollHeight;
-        } catch(e) { threadDiv.innerHTML = "Failed to load thread."; }
+        }
     }
 
     async function submitComment() {
         const btn = document.getElementById('sendCommentBtn');
         const input = document.getElementById('commentInput');
         const msg = input.value.trim();
-        
         if (!msg || isSending) return;
 
         isSending = true;
-        const originalHtml = btn.innerHTML;
         btn.disabled = true;
+        const original = btn.innerHTML;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-        try {
-            await fetch(API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: session.Name, message: msg }) 
-            });
-            input.value = '';
-            await refreshThreadOnly();
-        } catch (e) { alert("Error sending message."); }
-        finally {
-            isSending = false;
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-        }
+        await fetch(API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: session.Name, message: msg }) 
+        });
+        
+        input.value = '';
+        isSending = false;
+        btn.disabled = false;
+        btn.innerHTML = original;
+        loadTasks(false); 
     }
 
-    // 3. TASK & PROFILE UPDATES
     async function updateStatus(taskId, status) {
-        document.getElementById(`btns-${taskId}`).innerHTML = '<div class="spinner-border spinner-border-sm text-primary"></div>';
         await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SET_STATUS", taskId, status }) });
-        loadTasks();
+        loadTasks(false);
     }
 
     async function saveProfile() {
         const btn = document.getElementById('saveBtn');
         btn.disabled = true; btn.innerHTML = 'Syncing...';
-        
         const file = document.getElementById('editPicInput').files[0];
         let fileData = null, fileType = "";
         if (file) {
             fileData = await new Promise(r => { const reader = new FileReader(); reader.onload = () => r(reader.result.split(',')[1]); reader.readAsDataURL(file); });
             fileType = file.type;
         }
-
         const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "UPDATE_PROFILE", id: session.ID, name: document.getElementById('editName').value, pass: document.getElementById('editPass').value, fileData, fileType }) });
         const result = await res.json();
         if (result.status === "SUCCESS") {
@@ -223,22 +227,19 @@
         }
     }
 
-    // 4. CLEANUP & UTILS
     function previewImage(input) { if (input.files && input.files[0]) { const r = new FileReader(); r.onload = (e) => document.getElementById('editPreview').src = e.target.result; r.readAsDataURL(input.files[0]); } }
     function logout() { localStorage.clear(); window.location.href = "index.html"; }
 
-    // CRITICAL BUG FIX FOR MODAL BACKDROP
-    document.addEventListener('DOMContentLoaded', () => {
-        const modalEl = document.getElementById('commentModal');
-        modalEl.addEventListener('hidden.bs.modal', () => {
-            const backdrops = document.querySelectorAll('.modal-backdrop');
-            backdrops.forEach(b => b.remove());
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = 'auto';
-            document.body.style.paddingRight = '0';
-        });
+    document.getElementById('commentModal').addEventListener('hidden.bs.modal', () => {
+        isModalOpen = false;
+        activeTaskId = null;
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(b => b.remove());
+        document.body.style.overflow = 'auto';
     });
 
+    // REAL-TIME POLLING: Every 5 seconds
+    setInterval(() => loadTasks(true), 5000);
     window.onload = () => { updateSidebarUI(); loadTasks(); };
 </script>
 </body>
