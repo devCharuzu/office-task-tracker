@@ -13,13 +13,9 @@
         .mobile-nav { display: none; position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; z-index: 1001; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
         .main-content { margin-left: 260px; padding: 40px; min-height: 100vh; transition: 0.3s; }
         .task-card { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: 0.3s; border-left: 6px solid #d1d5db; }
-        .task-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
         .status-Assigned { border-left-color: #f59e0b; }
         .status-Received { border-left-color: #3b82f6; }
         .status-Completed { border-left-color: #10b981; }
-        .chat-msg { padding: 12px 16px; border-radius: 20px; font-size: 0.9rem; max-width: 85%; line-height: 1.4; }
-        .msg-me { background: var(--primary-grad); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .msg-them { background: #f3f4f6; color: #1f2937; align-self: flex-start; border-bottom-left-radius: 4px; }
         @media (max-width: 992px) {
             .sidebar { display: none; }
             .mobile-nav { display: flex; justify-content: space-around; }
@@ -47,13 +43,12 @@
         <a href="#" class="text-primary text-center flex-grow-1"><i class="bi bi-house-door fs-4"></i></a>
         <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#archiveModal" class="text-muted text-center flex-grow-1"><i class="bi bi-archive fs-4"></i></a>
         <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#profileModal" class="text-muted text-center flex-grow-1"><i class="bi bi-person fs-4"></i></a>
-        <a href="javascript:void(0)" onclick="logout()" class="text-danger text-center flex-grow-1"><i class="bi bi-power fs-4"></i></a>
     </div>
 
     <main class="main-content">
         <header class="d-flex justify-content-between align-items-center mb-4">
             <div><h3 class="fw-bold">My Workspace</h3><p class="text-muted small">Real-time task management</p></div>
-            <button onclick="loadTasks()" class="btn btn-white shadow-sm rounded-pill d-none d-lg-block px-3"><i class="bi bi-arrow-clockwise me-1"></i> Sync</button>
+            <button onclick="loadTasks()" class="btn btn-white shadow-sm rounded-pill px-3"><i class="bi bi-arrow-clockwise"></i> Sync</button>
         </header>
         <div id="taskContainer" class="row g-4"></div>
     </main>
@@ -70,12 +65,18 @@
     <div class="modal fade" id="editTaskModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow" style="border-radius: 20px;">
-                <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Update Progress</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Edit Task Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-4">
                     <input type="hidden" id="editTaskId">
-                    <div class="mb-3"><label class="small fw-bold">Task Title</label><input type="text" id="editTaskTitle" class="form-control border-0 bg-light rounded-3"></div>
-                    <div class="mb-3"><label class="small fw-bold">Notes</label><textarea id="editTaskInstructions" class="form-control border-0 bg-light rounded-3" rows="3"></textarea></div>
-                    <button onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Save Changes</button>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Task Title</label>
+                        <input type="text" id="editTaskTitle" class="form-control border-0 bg-light rounded-3" placeholder="e.g. Update Financial Report">
+                    </div>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Description / Instructions</label>
+                        <textarea id="editTaskInstructions" class="form-control border-0 bg-light rounded-3" rows="3" placeholder="Describe the steps or details of this task..."></textarea>
+                    </div>
+                    <button onclick="saveTaskEdit()" id="saveEditBtn" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Task</button>
                 </div>
             </div>
         </div>
@@ -84,16 +85,16 @@
     <div class="modal fade" id="profileModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow" style="border-radius: 20px;">
-                <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Account Settings</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Profile Settings</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-4 text-center">
                     <div class="position-relative d-inline-block mb-3">
                         <img id="editPreview" src="https://via.placeholder.com/100" class="rounded-circle shadow-sm" style="width:100px; height:100px; object-fit:cover;">
                         <button class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" onclick="document.getElementById('editPicInput').click()"><i class="bi bi-camera"></i></button>
                     </div>
                     <input type="file" id="editPicInput" class="d-none" accept="image/*" onchange="previewAndCompress(this)">
-                    <input type="text" id="editName" class="form-control mb-3 border-0 bg-light rounded-3" placeholder="Display Name">
+                    <input type="text" id="editName" class="form-control mb-3 border-0 bg-light rounded-3" placeholder="Name">
                     <input type="password" id="editPass" class="form-control mb-3 border-0 bg-light rounded-3" placeholder="New Password">
-                    <button onclick="saveProfile()" id="saveBtn" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Profile</button>
+                    <button onclick="saveProfile()" id="saveProfileBtn" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -102,8 +103,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
-        let session = JSON.parse(localStorage.getItem('office_session'));
-        let compressedImg = null;
+        let session = JSON.parse(localStorage.getItem('office_session')), compressedImg = null;
 
         if (!session) window.location.href = "index.html";
 
@@ -120,8 +120,8 @@
             try {
                 const res = await fetch(API_URL); const data = await res.json();
                 const myTasks = data.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
-                renderTasksUI(myTasks.filter(t => t.Archived !== true), 'taskContainer');
-                renderTasksUI(myTasks.filter(t => t.Archived === true), 'archiveContainer', true);
+                renderTasksUI(myTasks.filter(t => t.Archived !== true && t.Archived !== "true"), 'taskContainer');
+                renderTasksUI(myTasks.filter(t => t.Archived === true || t.Archived === "true"), 'archiveContainer', true);
             } catch(e) { console.error(e); }
         }
 
@@ -130,27 +130,29 @@
                 <div class="col-12 ${isArchive ? 'col-md-6' : 'col-xl-6'}">
                     <div class="card task-card p-4 status-${t.Status}">
                         <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
+                            <div class="flex-grow-1">
                                 <span class="badge rounded-pill mb-2 ${t.Status==='Assigned'?'bg-warning text-dark':(t.Status==='Received'?'bg-primary':'bg-success')}">${t.Status}</span>
-                                <h5 class="fw-bold mb-1">${t.Title}</h5>
+                                <h5 class="fw-bold mb-1 text-truncate" style="max-width:200px;">${t.Title}</h5>
                                 <p class="text-muted small mb-0">${t.Instructions || ''}</p>
                             </div>
                             <div class="dropdown">
-                                <button class="btn btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm rounded-3">
-                                    <li><a class="dropdown-item small" href="javascript:void(0)" onclick="openEditTask('${t.TaskID}', '${t.Title}', '${t.Instructions}')"><i class="bi bi-pencil me-2"></i> Edit</a></li>
+                                <button class="btn btn-light rounded-circle shadow-sm" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow rounded-3">
+                                    <li><a class="dropdown-item small" href="javascript:void(0)" onclick="openEditTask('${t.TaskID}', '${t.Title.replace(/'/g, "\\'")}', '${t.Instructions.replace(/'/g, "\\'")}')"><i class="bi bi-pencil me-2"></i> Edit</a></li>
+                                    <li><hr class="dropdown-divider"></li>
                                     ${isArchive 
-                                        ? `<li><a class="dropdown-item small text-success" href="javascript:void(0)" onclick="toggleArchive('${t.TaskID}', false)"><i class="bi bi-arrow-up-circle me-2"></i> Restore</a></li>`
-                                        : `<li><a class="dropdown-item small text-danger" href="javascript:void(0)" onclick="toggleArchive('${t.TaskID}', true)"><i class="bi bi-archive me-2"></i> Archive</a></li>`
+                                        ? `<li><a class="dropdown-item small text-success" href="javascript:void(0)" onclick="toggleArchive('${t.TaskID}', false)"><i class="bi bi-arrow-up-circle me-2"></i> Restore Task</a></li>`
+                                        : `<li><a class="dropdown-item small text-danger" href="javascript:void(0)" onclick="toggleArchive('${t.TaskID}', true)"><i class="bi bi-archive me-2"></i> Archive Task</a></li>`
                                     }
                                 </ul>
                             </div>
                         </div>
                         <div class="d-flex gap-2">
-                            ${t.Status==='Assigned'?`<button onclick="updateStatus('${t.TaskID}','Received')" class="btn btn-primary w-100 rounded-pill">Accept</button>`:''}${t.Status==='Received'?`<button onclick="updateStatus('${t.TaskID}','Completed')" class="btn btn-success w-100 rounded-pill">Done</button>`:''}
+                            ${t.Status==='Assigned'?`<button onclick="updateStatus('${t.TaskID}','Received')" class="btn btn-primary w-100 rounded-pill shadow-sm">Accept</button>`:''}
+                            ${t.Status==='Received'?`<button onclick="updateStatus('${t.TaskID}','Completed')" class="btn btn-success w-100 rounded-pill shadow-sm">Mark Done</button>`:''}
                         </div>
                     </div>
-                </div>`).join('') || '<div class="text-center py-5 w-100 text-muted small">No tasks found</div>';
+                </div>`).join('') || '<div class="text-center py-5 w-100 text-muted small">Empty list</div>';
         }
 
         async function updateStatus(taskId, status) { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SET_STATUS", taskId, status }) }); loadTasks(); }
@@ -168,11 +170,16 @@
         }
 
         async function saveTaskEdit() {
-            const id = document.getElementById('editTaskId').value;
-            const title = document.getElementById('editTaskTitle').value;
-            const instructions = document.getElementById('editTaskInstructions').value;
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "EDIT_TASK", taskId: id, title, instructions }) });
+            const btn = document.getElementById('saveEditBtn');
+            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ 
+                action: "EDIT_TASK", 
+                taskId: document.getElementById('editTaskId').value, 
+                title: document.getElementById('editTaskTitle').value, 
+                instructions: document.getElementById('editTaskInstructions').value 
+            }) });
             bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide();
+            btn.disabled = false; btn.innerHTML = 'Update Task';
             loadTasks();
         }
 
@@ -194,7 +201,7 @@
         }
 
         async function saveProfile() {
-            const btn = document.getElementById('saveBtn'); btn.disabled = true;
+            const btn = document.getElementById('saveProfileBtn'); btn.disabled = true;
             const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ 
                 action: "UPDATE_PROFILE", id: session.ID, name: document.getElementById('editName').value, 
                 pass: document.getElementById('editPass').value, fileData: compressedImg ? compressedImg.split(',')[1] : null, fileType: "image/jpeg" 
@@ -213,7 +220,7 @@
 
         function logout() { localStorage.clear(); window.location.href = "index.html"; }
         window.onload = () => { updateUIElements(); loadTasks(); };
-        setInterval(loadTasks, 8000);
+        setInterval(loadTasks, 10000);
     </script>
 </body>
 </html>
