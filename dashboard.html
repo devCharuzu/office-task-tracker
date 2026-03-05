@@ -116,14 +116,21 @@
             document.getElementById('editName').value = session.Name;
         }
 
-        async function loadTasks() {
-            try {
-                const res = await fetch(API_URL); const data = await res.json();
-                const myTasks = data.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
-                renderTasksUI(myTasks.filter(t => t.Archived !== true && t.Archived !== "true"), 'taskContainer');
-                renderTasksUI(myTasks.filter(t => t.Archived === true || t.Archived === "true"), 'archiveContainer', true);
-            } catch(e) { console.error(e); }
-        }
+       // Replace the loadTasks function in your dashboard.html
+async function loadTasks() {
+    try {
+        const res = await fetch(API_URL); 
+        const data = await res.json();
+        const myTasks = data.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
+        
+        // Fix: Handles Google Sheets treating Archive as string "TRUE"/"FALSE"
+        const active = myTasks.filter(t => t.Archived != "TRUE" && t.Archived != true);
+        const archived = myTasks.filter(t => t.Archived == "TRUE" || t.Archived == true);
+        
+        renderTasksUI(active, 'taskContainer');
+        renderTasksUI(archived, 'archiveContainer', true);
+    } catch(e) { console.error("Sync Error:", e); }
+}
 
         function renderTasksUI(tasks, containerId, isArchive = false) {
             document.getElementById(containerId).innerHTML = tasks.reverse().map(t => `
