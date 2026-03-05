@@ -3,32 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Director Panel | Control</title>
+    <title>Director Panel | Control Center</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
         body { background: #f0f2f5; font-family: 'Inter', sans-serif; }
         .card { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .nav-custom { background: #0d6efd; color: white; }
+        .nav-custom { background: #2563eb; color: white; }
         .mini-pic { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; border: 1px solid #dee2e6; }
-        .status-badge { font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; font-weight: bold; text-transform: uppercase; }
-        /* Dynamic Status Colors */
-        .bg-Assigned { background: #fff3cd; color: #856404; }
-        .bg-Received { background: #d1ecf1; color: #0c5460; }
-        .bg-Completed { background: #d4edda; color: #155724; }
-        .table-responsive { max-height: 75vh; overflow-y: auto; }
-        .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); display:flex; justify-content:center; align-items:center; z-index:9999; }
+        .status-badge { font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; font-weight: bold; }
+        .bg-Assigned { background: #fef3c7; color: #92400e; }
+        .bg-Received { background: #dbeafe; color: #1e40af; }
+        .bg-Completed { background: #dcfce7; color: #166534; }
+        .table-responsive { max-height: 70vh; overflow-y: auto; }
+        .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); display:flex; justify-content:center; align-items:center; z-index:9999; flex-direction: column; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="loader" class="loading-overlay hidden"><div class="spinner-border text-primary"></div></div>
+<div id="loader" class="loading-overlay">
+    <div class="spinner-border text-primary mb-2"></div>
+    <div class="fw-bold text-primary">Syncing Database...</div>
+</div>
 
 <nav class="navbar nav-custom shadow-sm mb-4">
     <div class="container">
-        <span class="navbar-brand fw-bold"><i class="bi bi-person-workspace me-2"></i>Director Control</span>
+        <span class="navbar-brand fw-bold text-white"><i class="bi bi-shield-lock me-2"></i>Director Control</span>
         <div class="d-flex align-items-center">
-            <span id="directorName" class="me-3 small opacity-75"></span>
+            <span id="directorName" class="me-3 small text-white opacity-75"></span>
             <button onclick="logout()" class="btn btn-light btn-sm fw-bold rounded-pill px-3">Logout</button>
         </div>
     </div>
@@ -37,35 +40,36 @@
 <div class="container">
     <div class="row">
         <div class="col-lg-4 mb-4">
-            <div class="card p-4 sticky-top" style="top: 20px; z-index: 1000;">
+            <div class="card p-4 sticky-top" style="top: 20px;">
                 <h5 class="fw-bold mb-3 border-bottom pb-2">Assign New Task</h5>
                 <form id="taskForm">
                     <div class="mb-3">
                         <label class="small fw-bold">Task Title</label>
-                        <input type="text" id="title" class="form-control" placeholder="What needs to be done?" required>
+                        <input type="text" id="title" class="form-control" placeholder="Brief title" required>
                     </div>
                     
                     <div class="mb-3">
                         <label class="small fw-bold">Target Office</label>
-                        <select id="designation" class="form-select" onchange="filterEmployees()" required>
+                        <select id="officeSelect" class="form-select" onchange="filterEmployees()" required>
                             <option value="">-- Select Office --</option>
                             <option value="Admin">Admin</option>
                             <option value="Finance">Finance</option>
                             <option value="HR">HR</option>
                             <option value="Operations">Operations</option>
+                            <option value="Executive">Executive</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
                         <label class="small fw-bold">Select Assignee</label>
                         <select id="empSelect" class="form-select" disabled required>
-                            <option value="">-- Choose Employee --</option>
+                            <option value="">-- Select Office First --</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
                         <label class="small fw-bold">Instructions</label>
-                        <textarea id="instructions" class="form-control" rows="3" placeholder="Step-by-step details..."></textarea>
+                        <textarea id="instructions" class="form-control" rows="3" placeholder="Details..."></textarea>
                     </div>
                     
                     <div class="mb-4">
@@ -73,8 +77,8 @@
                         <input type="file" id="fileInput" class="form-control form-control-sm">
                     </div>
 
-                    <button type="submit" id="submitBtn" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
-                        <i class="bi bi-plus-circle me-2"></i>Assign Task
+                    <button type="submit" id="submitBtn" class="btn btn-primary w-100 py-2 fw-bold">
+                        <i class="bi bi-send me-2"></i>Dispatch Task
                     </button>
                 </form>
             </div>
@@ -83,21 +87,20 @@
         <div class="col-lg-8 mb-4">
             <div class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="fw-bold m-0"><i class="bi bi-activity me-2 text-primary"></i>Live Monitor</h5>
-                    <button onclick="loadData()" class="btn btn-sm btn-outline-secondary rounded-pill"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                    <h5 class="fw-bold m-0"><i class="bi bi-broadcast text-danger me-2"></i>Live Monitor</h5>
+                    <button onclick="initDirector()" class="btn btn-sm btn-outline-secondary rounded-pill"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
                 </div>
                 <div class="table-responsive">
                     <table class="table align-middle">
                         <thead class="table-light text-muted small">
                             <tr>
-                                <th>TASK INFO</th>
+                                <th>TASK</th>
                                 <th>ASSIGNEE</th>
                                 <th>STATUS</th>
-                                <th>TIMESTAMP</th>
+                                <th>DATE</th>
                             </tr>
                         </thead>
-                        <tbody id="taskTableBody">
-                            </tbody>
+                        <tbody id="taskTableBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -107,75 +110,66 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
+    
+    // Global State
+    let state = { users: [], tasks: [], session: JSON.parse(localStorage.getItem('office_session')) };
 
-    // Session Verification
-    const session = JSON.parse(localStorage.getItem('office_session'));
-    if (!session || session.role !== "Director") {
+    // Initial Security Check
+    if (!state.session || state.session.Role !== "Director") {
         window.location.href = "index.html";
-    } else {
-        document.getElementById('directorName').textContent = `Admin: ${session.name}`;
     }
 
-    let allUsers = [];
-
-    // Load Data using modern async/await
-    async function loadData() {
+    async function initDirector() {
         document.getElementById('loader').classList.remove('hidden');
+        document.getElementById('directorName').textContent = `Admin: ${state.session.Name}`;
+        
         try {
             const res = await fetch(API_URL);
             const data = await res.json();
-            allUsers = data.users;
-            renderTasks(data.tasks);
-        } catch(e) { 
-            console.error("Fetch Error:", e);
-            alert("Could not load latest data. Check internet.");
+            state.users = data.users;
+            state.tasks = data.tasks;
+            renderTasks();
+        } catch(e) {
+            alert("Database connection failed.");
         } finally {
             document.getElementById('loader').classList.add('hidden');
         }
     }
 
- function filterEmployees() {
-    const office = document.getElementById('designation').value;
-    const select = document.getElementById('empSelect');
-    select.innerHTML = '<option value="">-- Choose Employee --</option>';
-    
-    // IMPORTANT: The key in userList is 'office' (from our fixed Code.gs)
-    const filtered = allUsers.filter(u => String(u.office).trim() === String(office).trim() && u.role !== "Director");
-    
-    if(filtered.length === 0) {
-        select.innerHTML = '<option value="">No employees in this office</option>';
-        select.disabled = true;
-    } else {
-        filtered.forEach(u => {
-            let opt = document.createElement('option');
-            opt.value = u.id;
-            opt.textContent = u.name;
-            select.appendChild(opt);
-        });
-        select.disabled = false;
+    function filterEmployees() {
+        const selectedOffice = document.getElementById('officeSelect').value;
+        const empSelect = document.getElementById('empSelect');
+        
+        // Fast Filtering Algorithm
+        const filtered = state.users.filter(u => u.Office === selectedOffice && u.Role !== "Director");
+        
+        empSelect.innerHTML = '<option value="">-- Choose Employee --</option>' + 
+            filtered.map(u => `<option value="${u.ID}">${u.Name}</option>`).join('');
+        
+        empSelect.disabled = (filtered.length === 0);
     }
-}
-    function renderTasks(tasks) {
+
+    function renderTasks() {
         const tbody = document.getElementById('taskTableBody');
-        if (!tasks || tasks.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No tasks assigned yet.</td></tr>';
+        if (state.tasks.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">No tasks in database.</td></tr>';
             return;
         }
 
-        tbody.innerHTML = [...tasks].reverse().map(t => { 
-            const userMatch = allUsers.find(u => String(u.id) === String(t.EmployeeID));
-            const profileImg = userMatch?.profilePic || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(t.EmployeeName);
+        tbody.innerHTML = [...state.tasks].reverse().map(t => {
+            const user = state.users.find(u => String(u.ID) === String(t.EmployeeID));
+            const avatar = user?.ProfilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.EmployeeName)}&background=random`;
 
             return `
                 <tr>
                     <td>
-                        <div class="fw-bold text-dark">${t.Title}</div>
-                        <small class="text-muted d-block" style="font-size: 0.7rem;">ID: ${t.TaskID}</small>
+                        <div class="fw-bold text-dark mb-0">${t.Title}</div>
+                        <small class="text-muted" style="font-size:0.7rem">OFFICE: ${t.Office}</small>
                     </td>
                     <td>
                         <div class="d-flex align-items-center">
-                            <img src="${profileImg}" class="mini-pic">
-                            <span class="small fw-semibold">${t.EmployeeName}</span>
+                            <img src="${avatar}" class="mini-pic">
+                            <div class="small fw-semibold">${t.EmployeeName}</div>
                         </div>
                     </td>
                     <td><span class="status-badge bg-${t.Status}">${t.Status}</span></td>
@@ -184,19 +178,18 @@
         }).join('');
     }
 
-    // Task Submission
     document.getElementById('taskForm').onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
-        btn.disabled = true; 
+        btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Syncing...';
 
         const file = document.getElementById('fileInput').files[0];
         let fileData = null, fileName = "", fileType = "";
 
         if (file) {
-            const reader = new FileReader();
             fileData = await new Promise(resolve => {
+                const reader = new FileReader();
                 reader.onload = () => resolve(reader.result.split(',')[1]);
                 reader.readAsDataURL(file);
             });
@@ -205,35 +198,31 @@
         }
 
         const payload = {
-            action: "CREATE",
-            taskId: "T-" + Math.floor(Math.random() * 100000),
+            action: "CREATE_TASK",
             title: document.getElementById('title').value,
-            empId: String(document.getElementById('empSelect').value),
+            empId: document.getElementById('empSelect').value,
             empName: document.getElementById('empSelect').options[document.getElementById('empSelect').selectedIndex].text,
-            office: document.getElementById('designation').value,
+            office: document.getElementById('officeSelect').value,
             instructions: document.getElementById('instructions').value,
             fileData, fileName, fileType
         };
 
         try {
-            // Using POST without no-cors to allow for response validation later
-            await fetch(API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify(payload) 
-            });
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
             alert("🚀 Task successfully dispatched!");
-            location.reload();
+            initDirector(); // Refresh live monitor
+            document.getElementById('taskForm').reset();
         } catch(e) {
-            alert("Logic Error: Check if your Apps Script is deployed as 'Anyone'.");
+            alert("Sync Error. Please try again.");
+        } finally {
             btn.disabled = false;
-            btn.innerText = "Assign Task";
+            btn.innerHTML = '<i class="bi bi-send me-2"></i>Dispatch Task';
         }
     };
 
     function logout() { localStorage.clear(); window.location.href = "index.html"; }
     
-    // Initial Load
-    loadData();
+    window.onload = initDirector;
 </script>
 </body>
 </html>
