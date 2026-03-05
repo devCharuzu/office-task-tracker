@@ -134,23 +134,27 @@
         }
     }
 
-    function filterEmployees() {
-        const office = document.getElementById('designation').value;
-        const select = document.getElementById('empSelect');
-        select.innerHTML = '<option value="">-- Choose Employee --</option>';
-        
-        // Match against 'office' key in user object
-        const filtered = allUsers.filter(u => u.office === office && u.role !== "Director");
-        
+ function filterEmployees() {
+    const office = document.getElementById('designation').value;
+    const select = document.getElementById('empSelect');
+    select.innerHTML = '<option value="">-- Choose Employee --</option>';
+    
+    // IMPORTANT: The key in userList is 'office' (from our fixed Code.gs)
+    const filtered = allUsers.filter(u => String(u.office).trim() === String(office).trim() && u.role !== "Director");
+    
+    if(filtered.length === 0) {
+        select.innerHTML = '<option value="">No employees in this office</option>';
+        select.disabled = true;
+    } else {
         filtered.forEach(u => {
             let opt = document.createElement('option');
             opt.value = u.id;
             opt.textContent = u.name;
             select.appendChild(opt);
         });
-        select.disabled = filtered.length === 0;
+        select.disabled = false;
     }
-
+}
     function renderTasks(tasks) {
         const tbody = document.getElementById('taskTableBody');
         if (!tasks || tasks.length === 0) {
