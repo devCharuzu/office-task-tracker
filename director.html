@@ -7,65 +7,50 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        body { background: #f1f5f9; font-family: 'Inter', sans-serif; }
+        body { background: #f1f5f9; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         .navbar { background: #1e293b; color: white; }
         .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         .status-pill { font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; font-weight: 600; text-transform: capitalize; }
         .bg-assigned { background: #fef3c7; color: #92400e; }
         .bg-received { background: #dbeafe; color: #1e40af; }
         .bg-completed { background: #dcfce7; color: #166534; }
-        .chat-msg { padding: 8px 12px; border-radius: 15px; margin-bottom: 8px; font-size: 0.85rem; max-width: 85%; }
+        .chat-msg { padding: 8px 12px; border-radius: 15px; margin-bottom: 8px; font-size: 0.85rem; max-width: 90%; word-wrap: break-word; }
         .msg-me { background: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .msg-them { background: #e2e8f0; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; }
-        .emp-pic-sm { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; background: #e2e8f0; }
+        .emp-pic-sm { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; }
+        @media (max-width: 576px) { .table { font-size: 0.85rem; } .status-pill { padding: 2px 8px; } }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark p-3 mb-4 shadow">
+<nav class="navbar navbar-dark p-3 mb-3 shadow sticky-top">
     <div class="container-fluid">
-        <span class="navbar-brand fw-bold"><i class="bi bi-shield-lock me-2"></i> Director Control Panel</span>
-        <button class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="logout()">Logout</button>
+        <span class="navbar-brand fw-bold small-text"><i class="bi bi-shield-lock me-1"></i> Control Panel</span>
+        <button class="btn btn-outline-light btn-sm rounded-pill" onclick="logout()">Logout</button>
     </div>
 </nav>
 
 <div class="container-fluid">
-    <div class="row g-4">
+    <div class="row g-3">
         <div class="col-lg-4">
-            <div class="card p-4 shadow-sm">
-                <h5 class="fw-bold mb-3">Assign New Task</h5>
-                <div class="mb-3">
-                    <label class="small fw-bold text-muted">Select Employee</label>
-                    <select id="empSelect" class="form-select border-0 bg-light"></select>
-                </div>
-                <div class="mb-3">
-                    <label class="small fw-bold text-muted">Task Title</label>
-                    <input type="text" id="taskTitle" class="form-control border-0 bg-light" placeholder="Title">
-                </div>
-                <div class="mb-3">
-                    <label class="small fw-bold text-muted">Instructions</label>
-                    <textarea id="taskInstructions" class="form-control border-0 bg-light" rows="3"></textarea>
-                </div>
+            <div class="card p-3 p-md-4 shadow-sm">
+                <h6 class="fw-bold mb-3">Assign New Task</h6>
+                <div class="mb-3"><label class="small fw-bold text-muted">Employee</label><select id="empSelect" class="form-select border-0 bg-light"></select></div>
+                <div class="mb-3"><label class="small fw-bold text-muted">Title</label><input type="text" id="taskTitle" class="form-control border-0 bg-light"></div>
+                <div class="mb-3"><label class="small fw-bold text-muted">Instructions</label><textarea id="taskInstructions" class="form-control border-0 bg-light" rows="2"></textarea></div>
                 <button onclick="createTask()" id="createBtn" class="btn btn-primary w-100 fw-bold rounded-pill">Send Task</button>
             </div>
         </div>
 
         <div class="col-lg-8">
-            <div class="card p-4 shadow-sm">
+            <div class="card p-3 p-md-4 shadow-sm">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold m-0 text-dark">Live Task Monitor</h5>
-                    <button onclick="refreshData()" class="btn btn-sm btn-white border shadow-sm rounded-circle"><i class="bi bi-arrow-clockwise"></i></button>
+                    <h6 class="fw-bold m-0">Live Task Monitor</h6>
+                    <button onclick="refreshData()" class="btn btn-sm btn-white border rounded-circle"><i class="bi bi-arrow-clockwise"></i></button>
                 </div>
                 <div class="table-responsive">
                     <table class="table align-middle">
-                        <thead class="table-light">
-                            <tr class="small text-uppercase text-muted">
-                                <th>Employee</th>
-                                <th>Task Detail</th>
-                                <th>Status</th>
-                                <th class="text-center">Chat</th>
-                            </tr>
-                        </thead>
+                        <thead class="table-light"><tr class="small text-muted text-uppercase"><th>Staff</th><th>Task</th><th>Status</th><th class="text-center">Chat</th></tr></thead>
                         <tbody id="taskTableBody"></tbody>
                     </table>
                 </div>
@@ -75,17 +60,14 @@
 </div>
 
 <div class="modal fade" id="commentModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="fw-bold">Discussion</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="commentThread" class="d-flex flex-column mb-3" style="height: 350px; overflow-y: auto; background: #f8fafc; padding: 15px; border-radius: 12px; scroll-behavior: smooth;"></div>
+            <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Discussion</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body d-flex flex-column">
+                <div id="commentThread" class="d-flex flex-column mb-3" style="flex-grow: 1; height: 350px; overflow-y: auto; background: #f8fafc; padding: 15px; border-radius: 12px;"></div>
                 <div class="input-group">
                     <input type="text" id="commentInput" class="form-control border-0 bg-light" placeholder="Reply..." onkeypress="if(event.key==='Enter') submitComment()">
-                    <button class="btn btn-primary px-4" onclick="submitComment()" id="sendCommentBtn"><i class="bi bi-send-fill"></i></button>
+                    <button class="btn btn-primary px-3" onclick="submitComment()" id="sendCommentBtn"><i class="bi bi-send-fill"></i></button>
                 </div>
             </div>
         </div>
@@ -96,49 +78,39 @@
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
     let globalData = { users: [], tasks: [], comments: [] };
-    let activeTaskId = null;
-    let isSending = false;
-    let isModalOpen = false;
-    let taskReadStatus = {}; 
+    let activeTaskId = null, isSending = false, isModalOpen = false, taskReadStatus = {};
 
     async function refreshData() {
         try {
             const res = await fetch(API_URL);
             globalData = await res.json();
-            renderEmployees();
-            renderTasks();
-
+            renderEmployees(); renderTasks();
             if (isModalOpen && activeTaskId) {
                 const thread = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
-                renderThread(thread);
-                taskReadStatus[activeTaskId] = thread.length; // Mark as read
+                renderThread(thread); taskReadStatus[activeTaskId] = thread.length;
             }
-        } catch (e) { console.error("Refresh failed", e); }
+        } catch (e) { console.error(e); }
     }
 
     function renderEmployees() {
         const select = document.getElementById('empSelect');
-        const emps = globalData.users.filter(u => u.Role !== 'Director');
-        select.innerHTML = emps.map(u => `<option value="${u.ID}">${u.Name} (${u.Office})</option>`).join('');
+        select.innerHTML = globalData.users.filter(u => u.Role !== 'Director').map(u => `<option value="${u.ID}">${u.Name}</option>`).join('');
     }
 
     function renderTasks() {
         const tbody = document.getElementById('taskTableBody');
         tbody.innerHTML = globalData.tasks.slice().reverse().map(t => {
             const emp = globalData.users.find(u => String(u.ID) === String(t.EmployeeID)) || {};
-            const thread = globalData.comments.filter(c => String(c.TaskID) === String(t.TaskID));
-            const currentCount = thread.length;
-            const lastReadCount = taskReadStatus[t.TaskID] || 0;
-            const hasNew = currentCount > lastReadCount;
-
+            const count = globalData.comments.filter(c => String(c.TaskID) === String(t.TaskID)).length;
+            const hasNew = count > (taskReadStatus[t.TaskID] || 0);
             return `
                 <tr>
-                    <td><div class="d-flex align-items-center"><img src="${emp.ProfilePic || ''}" class="emp-pic-sm"><div><div class="fw-bold small">${emp.Name || 'Staff'}</div></div></div></td>
-                    <td><div class="small fw-bold">${t.Title}</div></td>
+                    <td><div class="d-flex align-items-center"><img src="${emp.ProfilePic || ''}" class="emp-pic-sm d-none d-sm-block"><div><div class="fw-bold small">${emp.Name || 'Staff'}</div></div></div></td>
+                    <td><div class="small fw-bold text-truncate" style="max-width: 100px;">${t.Title}</div></td>
                     <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
                     <td class="text-center">
-                        <button onclick="openComments('${t.TaskID}', ${currentCount})" class="btn btn-sm btn-light border-0 position-relative rounded-pill px-3">
-                            <i class="bi bi-chat-left-dots text-primary"></i>
+                        <button onclick="openComments('${t.TaskID}', ${count})" class="btn btn-sm btn-light border-0 position-relative rounded-pill">
+                            <i class="bi bi-chat-dots text-primary"></i>
                             ${hasNew ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
                         </button>
                     </td>
@@ -147,40 +119,20 @@
         }).join('');
     }
 
-    async function openComments(taskId, count) {
-        activeTaskId = taskId;
-        taskReadStatus[taskId] = count;
-        isModalOpen = true;
-        const modal = new bootstrap.Modal(document.getElementById('commentModal'));
-        modal.show();
-        refreshData();
-    }
+    async function openComments(taskId, count) { activeTaskId = taskId; taskReadStatus[taskId] = count; isModalOpen = true; new bootstrap.Modal(document.getElementById('commentModal')).show(); refreshData(); }
 
     function renderThread(thread) {
         const threadDiv = document.getElementById('commentThread');
-        const newHtml = thread.map(c => `
-            <div class="chat-msg ${c.SenderName === 'Director' ? 'msg-me' : 'msg-them'}">
-                <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
-                ${c.Message}
-            </div>
-        `).join('') || '<div class="text-center mt-5 small text-muted">No messages yet.</div>';
-
-        if (threadDiv.innerHTML !== newHtml) {
-            threadDiv.innerHTML = newHtml;
-            threadDiv.scrollTop = threadDiv.scrollHeight;
-        }
+        const newHtml = thread.map(c => `<div class="chat-msg ${c.SenderName === 'Director' ? 'msg-me' : 'msg-them'}"><div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>${c.Message}</div>`).join('') || '<div class="text-center mt-5 small text-muted">No messages yet.</div>';
+        if (threadDiv.innerHTML !== newHtml) { threadDiv.innerHTML = newHtml; threadDiv.scrollTop = threadDiv.scrollHeight; }
     }
 
     async function submitComment() {
         const input = document.getElementById('commentInput');
         if (!input.value.trim() || isSending) return;
         isSending = true;
-        await fetch(API_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: "Director", message: input.value.trim() }) 
-        });
-        input.value = ''; isSending = false;
-        refreshData();
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: "Director", message: input.value.trim() }) });
+        input.value = ''; isSending = false; refreshData();
     }
 
     async function createTask() {
@@ -191,14 +143,9 @@
     }
 
     function logout() { localStorage.clear(); window.location.href = "index.html"; }
-
-    document.getElementById('commentModal').addEventListener('hidden.bs.modal', () => {
-        isModalOpen = false;
-        refreshData(); // Clear dot immediately after closing
-    });
-
+    document.getElementById('commentModal').addEventListener('hidden.bs.modal', () => { isModalOpen = false; refreshData(); });
     setInterval(refreshData, 5000);
-    window.onload = () => refreshData();
+    window.onload = refreshData;
 </script>
 </body>
 </html>
