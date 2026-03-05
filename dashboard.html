@@ -123,13 +123,18 @@ async function loadTasks() {
         const data = await res.json();
         const myTasks = data.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
         
-        // Fix: Handles Google Sheets treating Archive as string "TRUE"/"FALSE"
-        const active = myTasks.filter(t => t.Archived != "TRUE" && t.Archived != true);
-        const archived = myTasks.filter(t => t.Archived == "TRUE" || t.Archived == true);
+        // Filter tasks based on the "Archived" column string value
+        const active = myTasks.filter(t => t.Archived !== "TRUE" && t.Archived !== true);
+        const archived = myTasks.filter(t => t.Archived === "TRUE" || t.Archived === true);
         
         renderTasksUI(active, 'taskContainer');
         renderTasksUI(archived, 'archiveContainer', true);
-    } catch(e) { console.error("Sync Error:", e); }
+    } catch(e) { console.error("Sync error:", e); }
+}
+
+async function updateStatus(taskId, status) {
+    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SET_STATUS", taskId, status }) });
+    loadTasks();
 }
 
         function renderTasksUI(tasks, containerId, isArchive = false) {
