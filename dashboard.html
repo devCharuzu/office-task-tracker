@@ -133,31 +133,64 @@
         }).join('');
     }
 
-    async function openComments(taskId) {
-        activeTaskId = taskId;
-        const modal = new bootstrap.Modal(document.getElementById('commentModal'));
-        modal.show();
-        document.getElementById('commentThread').innerHTML = 'Loading...';
-        
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        const thread = data.comments.filter(c => String(c.TaskID) === String(taskId));
-        
-        document.getElementById('commentThread').innerHTML = thread.map(c => `
-            <div class="chat-msg ${c.SenderName === session.Name ? 'msg-me' : 'msg-them'}">
-                <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
-                ${c.Message}
-            </div>
-        `).join('') || '<div class="text-center small text-muted">No concerns raised.</div>';
-    }
+  let isSending = false; // Prevention flag
 
-    async function submitComment() {
-        const msg = document.getElementById('commentInput').value;
-        if (!msg) return;
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: session.Name, message: msg }) });
-        document.getElementById('commentInput').value = '';
-        openComments(activeTaskId);
+async function submitComment() {
+    const btn = document.querySelector('#commentModal .btn-primary');
+    const input = document.getElementById('commentInput');
+    const msg = input.value.trim();
+    
+    if (!msg || isSending) return;
+
+    // 1. Enter Loading State
+    isSending = true;
+    const originalBtnHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    try {
+        const response = await fetch(API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ 
+                action: "ADD_COMMENT", 
+                taskId: activeTaskId, 
+                senderName: session.Name, 
+                message: msg 
+            }) 
+        });
+
+        if (response.ok) {
+            input.value = '';
+            // 2. Refresh the thread immediately
+            await refreshThreadOnly(); 
+        }
+    } catch (e) {
+        alert("Failed to send message. Check connection.");
+    } finally {
+        // 3. Exit Loading State
+        isSending = false;
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHtml;
     }
+}
+
+// Helper to refresh thread without closing modal
+async function refreshThreadOnly() {
+    const threadDiv = document.getElementById('commentThread');
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    const thread = data.comments.filter(c => String(c.TaskID) === String(activeTaskId));
+    
+    threadDiv.innerHTML = thread.map(c => `
+        <div class="chat-msg ${c.SenderName === session.Name ? 'msg-me' : 'msg-them'}">
+            <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
+            ${c.Message}
+        </div>
+    `).join('') || '<div class="text-center small text-muted">No messages yet.</div>';
+    
+    // Auto-scroll to bottom
+    threadDiv.scrollTop = threadDiv.scrollHeight;
+}
 
     async function updateStatus(taskId, status) {
         await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SET_STATUS", taskId, status }) });
