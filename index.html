@@ -9,8 +9,9 @@
     <style>
         body { background: #f0f2f5; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; align-items: center; }
         .auth-card { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; background: white; }
-        .btn-primary { background: #2563eb; border: none; padding: 12px; font-weight: 600; border-radius: 10px; }
-        .form-control, .form-select { padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .btn-primary { background: #2563eb; border: none; padding: 12px; font-weight: 600; border-radius: 10px; transition: 0.3s; }
+        .btn-primary:hover { background: #1d4ed8; transform: translateY(-2px); }
+        .form-control, .form-select { padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; }
         .hidden { display: none !important; }
         .loader { width: 20px; height: 20px; border: 3px solid #FFF; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -69,7 +70,6 @@
 </div>
 
 <script>
-    // CRITICAL: Ensure this matches your latest 'New Version' deployment URL
     const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
 
     function toggleAuth() {
@@ -82,43 +82,35 @@
         x.type = x.type === "password" ? "text" : "password";
     }
 
-    /**
-     * LOGIN LOGIC
-     */
     async function login() {
-    const idInput = document.getElementById('userId').value;
-    const passInput = document.getElementById('password').value;
-    const btn = document.querySelector('button');
+        const idInput = document.getElementById('loginId').value.trim();
+        const passInput = document.getElementById('loginPass').value.trim();
+        const btn = document.getElementById('loginBtn');
 
-    if(!idInput || !passInput) return alert("Please fill all fields");
-    
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        if(!idInput || !passInput) return alert("Please fill all fields");
+        
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loader"></span>';
 
-    try {
-        const response = await fetch(API_URL);
-        const data = await response.json();
-        const user = data.users.find(u => String(u.ID) === idInput && String(u.Password) === passInput);
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            const user = data.users.find(u => String(u.ID) === idInput && String(u.Password) === passInput);
 
-        if (user) {
-            localStorage.setItem('office_session', JSON.stringify(user));
-            window.location.href = user.Role === "Director" ? "director.html" : "dashboard.html";
-        } else {
-            alert("Invalid ID or Password");
+            if (user) {
+                localStorage.setItem('office_session', JSON.stringify(user));
+                window.location.href = user.Role === "Director" ? "director.html" : "dashboard.html";
+            } else {
+                alert("Invalid ID or Password");
+            }
+        } catch (e) {
+            alert("System Error: Check Internet or API Deployment.");
+        } finally {
             btn.disabled = false;
-            btn.innerHTML = "Login";
+            btn.innerHTML = "Sign In";
         }
-    } catch (e) {
-        console.error(e);
-        alert("System Error: Check Internet or API Deployment.");
-        btn.disabled = false;
-        btn.innerHTML = "Login";
     }
-}
 
-    /**
-     * REGISTRATION LOGIC
-     */
     async function register() {
         const id = document.getElementById('regId').value.trim();
         const name = document.getElementById('regName').value.trim();
@@ -129,44 +121,33 @@
         if (!id || !name || !office || !pass) return alert("All fields are required");
 
         btn.disabled = true;
-        btn.innerHTML = '<span class="loader"></span> Processing...';
-
-        const payload = {
-            action: "REGISTER",
-            id: id,
-            name: name,
-            designation: office, // Maps to 'Office' in GSheets
-            pass: pass
-        };
+        btn.innerHTML = '<span class="loader"></span>';
 
         try {
             const res = await fetch(API_URL, {
                 method: 'POST',
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ action: "REGISTER", id, name, designation: office, pass })
             });
-            
             const result = await res.text();
-
             if (result === "SUCCESS") {
-                alert("✅ Registration successful! You can now log in.");
+                alert("Registration successful!");
                 toggleAuth();
-            } else if (result === "DUPLICATE") {
-                alert("❌ This Employee ID is already registered.");
+            } else {
+                alert("ID already exists.");
             }
         } catch (e) {
-            console.error(e);
-            alert("Registration failed. Please try again.");
+            alert("Registration failed.");
         } finally {
             btn.disabled = false;
-            btn.innerText = "Create Account";
+            btn.innerHTML = "Create Account";
         }
     }
 
-    // Auto-login check
     window.onload = () => {
-        const session = JSON.parse(localStorage.getItem('office_session'));
+        const session = localStorage.getItem('office_session');
         if (session) {
-            window.location.href = (session.Role === "Director") ? "director.html" : "dashboard.html";
+            const user = JSON.parse(session);
+            window.location.href = user.Role === "Director" ? "director.html" : "dashboard.html";
         }
     };
 </script>
