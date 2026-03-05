@@ -7,47 +7,32 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        :root { --glass: rgba(255, 255, 255, 0.9); --primary-grad: linear-gradient(135deg, #4f46e5, #3b82f6); }
-        body { background: #f3f4f6; font-family: 'Inter', sans-serif; color: #1f2937; }
-        
-        /* Sidebar for Desktop */
-        .sidebar { background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; width: 260px; transition: 0.3s; z-index: 1000; }
-        
-        /* Mobile Bottom Nav */
-        .mobile-nav { display: none; position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; z-index: 1001; padding: 10px 0; }
-        
-        /* Task Cards */
-        .task-card { border: none; border-radius: 16px; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: transform 0.2s; border-left: 6px solid #d1d5db; }
-        .task-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        :root { --primary-grad: linear-gradient(135deg, #4f46e5, #3b82f6); --surface: #ffffff; }
+        body { background: #f3f4f6; font-family: 'Inter', sans-serif; color: #1f2937; margin: 0; }
+        .sidebar { background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; width: 260px; z-index: 1000; }
+        .mobile-nav { display: none; position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; z-index: 1001; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        .main-content { margin-left: 260px; padding: 40px; min-height: 100vh; }
+        .task-card { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: 0.3s; border-left: 6px solid #d1d5db; }
+        .task-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
         .status-Assigned { border-left-color: #f59e0b; }
         .status-Received { border-left-color: #3b82f6; }
         .status-Completed { border-left-color: #10b981; }
-
-        /* Main Content Adjustments */
-        .main-content { margin-left: 260px; padding: 40px; transition: 0.3s; }
-
+        .chat-msg { padding: 12px 16px; border-radius: 20px; font-size: 0.9rem; max-width: 85%; line-height: 1.4; }
+        .msg-me { background: var(--primary-grad); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .msg-them { background: #f3f4f6; color: #1f2937; align-self: flex-start; border-bottom-left-radius: 4px; }
         @media (max-width: 992px) {
             .sidebar { display: none; }
             .mobile-nav { display: flex; justify-content: space-around; }
-            .main-content { margin-left: 0; padding: 20px; padding-bottom: 80px; }
+            .main-content { margin-left: 0; padding: 20px 20px 100px 20px; }
         }
-
-        .profile-img { width: 45px; height: 45px; border-radius: 12px; object-fit: cover; }
-        .chat-msg { padding: 10px 14px; border-radius: 18px; font-size: 0.9rem; max-width: 85%; }
-        .msg-me { background: var(--primary-grad); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .msg-them { background: #f3f4f6; color: #1f2937; align-self: flex-start; border-bottom-left-radius: 4px; }
     </style>
 </head>
 <body>
-
     <aside class="sidebar p-4 d-none d-lg-block">
-        <div class="d-flex align-items-center mb-5">
-            <div class="bg-primary p-2 rounded-3 me-2"><i class="bi bi-layers-half text-white"></i></div>
-            <span class="fw-bold fs-5">TaskFlow</span>
-        </div>
+        <div class="d-flex align-items-center mb-5"><div class="bg-primary p-2 rounded-3 me-2"><i class="bi bi-layers-half text-white"></i></div><span class="fw-bold fs-5">TaskFlow</span></div>
         <div class="mb-5 text-center">
             <img id="userPic" src="https://via.placeholder.com/80" class="rounded-4 mb-2 shadow-sm" style="width:80px; height:80px; object-fit:cover;">
-            <h6 id="userNameDisplay" class="fw-bold m-0">---</h6>
+            <h6 id="userNameDisplay" class="fw-bold m-0 text-truncate">---</h6>
             <p id="userIdDisplay" class="small text-muted">ID: --</p>
         </div>
         <nav class="nav flex-column gap-2">
@@ -66,32 +51,22 @@
 
     <main class="main-content">
         <header class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h3 class="fw-bold">My Tasks</h3>
-                <p class="text-muted small">Manage your daily workflow</p>
-            </div>
-            <button onclick="loadTasks()" class="btn btn-white shadow-sm rounded-3 d-none d-lg-block"><i class="bi bi-arrow-clockwise"></i> Sync</button>
+            <div><h3 class="fw-bold">My Workspace</h3><p class="text-muted small">Real-time task management</p></div>
+            <button onclick="loadTasks()" class="btn btn-white shadow-sm rounded-pill d-none d-lg-block px-3"><i class="bi bi-arrow-clockwise me-1"></i> Sync</button>
         </header>
-
-        <div id="taskContainer" class="row g-4">
-            </div>
+        <div id="taskContainer" class="row g-4"></div>
     </main>
 
     <div class="modal fade" id="commentModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                <div class="modal-header border-0">
-                    <h5 class="fw-bold">Discussion</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+                <div class="modal-header border-0 p-4 pb-0"><h5 class="fw-bold">Discussion</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body d-flex flex-column p-0">
-                    <div id="commentThread" class="p-3 d-flex flex-column gap-2" style="height: 400px; overflow-y: auto; background: #fafafa;"></div>
-                    <div class="p-3 bg-white border-top">
-                        <div class="input-group">
-                            <input type="text" id="commentInput" class="form-control border-0 bg-light" placeholder="Write a message..." onkeypress="if(event.key==='Enter') submitComment()">
-                            <button class="btn btn-primary rounded-3" onclick="submitComment()" id="sendCommentBtn"><i class="bi bi-send-fill"></i></button>
-                        </div>
-                    </div>
+                    <div id="commentThread" class="p-4 d-flex flex-column gap-3" style="height: 450px; overflow-y: auto; background: #fafafa;"></div>
+                    <div class="p-3 bg-white border-top"><div class="input-group">
+                        <input type="text" id="commentInput" class="form-control border-0 bg-light rounded-start-pill px-3" placeholder="Message...">
+                        <button class="btn btn-primary rounded-end-pill px-4" onclick="submitComment()" id="sendCommentBtn"><i class="bi bi-send-fill"></i></button>
+                    </div></div>
                 </div>
             </div>
         </div>
@@ -100,16 +75,13 @@
     <div class="modal fade" id="profileModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow" style="border-radius: 20px;">
-                <div class="modal-header border-0"><h5 class="fw-bold">Account Settings</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-header border-0"><h5 class="fw-bold">Profile</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-4 text-center">
-                    <div class="position-relative d-inline-block mb-3">
-                        <img id="editPreview" src="https://via.placeholder.com/100" class="rounded-4 shadow" style="width:100px; height:100px; object-fit:cover;">
-                        <button class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" onclick="document.getElementById('editPicInput').click()"><i class="bi bi-camera"></i></button>
-                    </div>
+                    <img id="editPreview" src="https://via.placeholder.com/100" class="rounded-4 mb-3" style="width:100px; height:100px; object-fit:cover; cursor:pointer" onclick="document.getElementById('editPicInput').click()">
                     <input type="file" id="editPicInput" class="d-none" onchange="previewImage(this)">
-                    <input type="text" id="editName" class="form-control mb-3 border-0 bg-light" placeholder="Full Name">
+                    <input type="text" id="editName" class="form-control mb-3 border-0 bg-light" placeholder="Name">
                     <input type="password" id="editPass" class="form-control mb-3 border-0 bg-light" placeholder="New Password">
-                    <button onclick="saveProfile()" id="saveBtn" class="btn btn-primary w-100 rounded-3 py-2 fw-bold">Update Profile</button>
+                    <button onclick="saveProfile()" id="saveBtn" class="btn btn-primary w-100 rounded-3 py-2 fw-bold">Save</button>
                 </div>
             </div>
         </div>
@@ -120,99 +92,53 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
         let session = JSON.parse(localStorage.getItem('office_session'));
         let activeTaskId = null, isSending = false, isModalOpen = false, taskReadStatus = {};
-
         if (!session) window.location.href = "index.html";
-
         function updateSidebarUI() {
             document.getElementById('userNameDisplay').textContent = session.Name;
             document.getElementById('userIdDisplay').textContent = `ID: ${session.ID}`;
-            if (session.ProfilePic) {
-                const pic = session.ProfilePic + (session.ProfilePic.includes('?') ? '&' : '?') + 't=' + Date.now();
-                document.getElementById('userPic').src = pic;
-                document.getElementById('editPreview').src = pic;
-            }
+            if (session.ProfilePic) { document.getElementById('userPic').src = session.ProfilePic + '?t=' + Date.now(); document.getElementById('editPreview').src = session.ProfilePic; }
             document.getElementById('editName').value = session.Name;
         }
-
         async function loadTasks() {
             try {
-                const res = await fetch(API_URL);
-                const data = await res.json();
+                const res = await fetch(API_URL); const data = await res.json();
                 const myTasks = data.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
                 renderTasksUI(myTasks, data.comments);
                 if (isModalOpen && activeTaskId) {
                     const thread = data.comments.filter(c => String(c.TaskID) === String(activeTaskId));
-                    updateChatThreadUI(thread);
-                    taskReadStatus[activeTaskId] = thread.length;
+                    updateChatThreadUI(thread); taskReadStatus[activeTaskId] = thread.length;
                 }
             } catch(e) { console.error(e); }
         }
-
         function renderTasksUI(tasks, allComments) {
             document.getElementById('taskContainer').innerHTML = tasks.reverse().map(t => {
                 const count = allComments.filter(c => String(c.TaskID) === String(t.TaskID)).length;
                 const hasNew = count > (taskReadStatus[t.TaskID] || 0);
-                return `
-                    <div class="col-12 col-xl-6">
-                        <div class="card task-card p-4 status-${t.Status}">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <span class="badge rounded-pill mb-2 ${t.Status==='Assigned'?'bg-warning text-dark':(t.Status==='Received'?'bg-primary':'bg-success')}">${t.Status}</span>
-                                    <h5 class="fw-bold mb-1">${t.Title}</h5>
-                                    <p class="text-muted small mb-0">${t.Instructions || 'No additional notes.'}</p>
-                                </div>
-                                <button onclick="openComments('${t.TaskID}', ${count})" class="btn btn-light rounded-circle position-relative">
-                                    <i class="bi bi-chat-text"></i>
-                                    ${hasNew ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
-                                </button>
-                            </div>
-                            <div class="d-flex gap-2">
-                                ${t.Status === 'Assigned' ? `<button onclick="updateStatus('${t.TaskID}', 'Received')" class="btn btn-primary w-100 rounded-3">Accept Task</button>` : ''}
-                                ${t.Status === 'Received' ? `<button onclick="updateStatus('${t.TaskID}', 'Completed')" class="btn btn-success w-100 rounded-3">Mark Finished</button>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('') || '<div class="text-center py-5">No tasks available</div>';
+                return `<div class="col-12 col-xl-6"><div class="card task-card p-4 status-${t.Status}"><div class="d-flex justify-content-between align-items-start mb-3"><div><span class="badge rounded-pill mb-2 ${t.Status==='Assigned'?'bg-warning text-dark':(t.Status==='Received'?'bg-primary':'bg-success')}">${t.Status}</span><h5 class="fw-bold mb-1">${t.Title}</h5><p class="text-muted small mb-0">${t.Instructions || ''}</p></div><button onclick="openComments('${t.TaskID}', ${count})" class="btn btn-light rounded-circle position-relative"><i class="bi bi-chat-text"></i>${hasNew ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}</button></div><div class="d-flex gap-2">${t.Status==='Assigned'?`<button onclick="updateStatus('${t.TaskID}','Received')" class="btn btn-primary w-100 rounded-pill">Accept</button>`:''}${t.Status==='Received'?`<button onclick="updateStatus('${t.TaskID}','Completed')" class="btn btn-success w-100 rounded-pill">Done</button>`:''}${t.Status==='Completed'?`<div class="text-success small"><i class="bi bi-check-all"></i> Task Completed</div>`:''}</div></div></div>`;
+            }).join('') || '<div class="text-center py-5">No tasks yet.</div>';
         }
-
         async function openComments(taskId, count) { activeTaskId = taskId; taskReadStatus[taskId] = count; isModalOpen = true; new bootstrap.Modal(document.getElementById('commentModal')).show(); loadTasks(); }
-
         function updateChatThreadUI(thread) {
             const div = document.getElementById('commentThread');
             const html = thread.map(c => `<div class="chat-msg ${c.SenderName === session.Name ? 'msg-me' : 'msg-them'}"><div class="fw-bold" style="font-size:0.7rem">${c.SenderName}</div>${c.Message}</div>`).join('');
             if(div.innerHTML !== html) { div.innerHTML = html; div.scrollTop = div.scrollHeight; }
         }
-
         async function submitComment() {
-            const input = document.getElementById('commentInput');
-            if(!input.value.trim() || isSending) return;
-            isSending = true;
+            const input = document.getElementById('commentInput'); if(!input.value.trim() || isSending) return; isSending = true;
             await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: session.Name, message: input.value.trim() }) });
             input.value = ''; isSending = false; loadTasks();
         }
-
         async function updateStatus(taskId, status) { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SET_STATUS", taskId, status }) }); loadTasks(); }
-
         async function saveProfile() {
-            const btn = document.getElementById('saveBtn'); btn.disabled = true;
-            const file = document.getElementById('editPicInput').files[0];
-            let fileData = null, fileType = "";
-            if (file) {
-                fileData = await new Promise(r => { const reader = new FileReader(); reader.onload = () => r(reader.result.split(',')[1]); reader.readAsDataURL(file); });
-                fileType = file.type;
-            }
+            const file = document.getElementById('editPicInput').files[0]; let fileData = null, fileType = "";
+            if (file) { fileData = await new Promise(r => { const reader = new FileReader(); reader.onload = () => r(reader.result.split(',')[1]); reader.readAsDataURL(file); }); fileType = file.type; }
             const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "UPDATE_PROFILE", id: session.ID, name: document.getElementById('editName').value, pass: document.getElementById('editPass').value, fileData, fileType }) });
-            const result = await res.json();
-            if (result.status === "SUCCESS") { localStorage.setItem('office_session', JSON.stringify({...session, Name: document.getElementById('editName').value, ProfilePic: result.newPic || session.ProfilePic})); location.reload(); }
+            const result = await res.json(); if (result.status === "SUCCESS") { localStorage.setItem('office_session', JSON.stringify({...session, Name: document.getElementById('editName').value, ProfilePic: result.newPic || session.ProfilePic})); location.reload(); }
         }
-
         function previewImage(input) { if (input.files && input.files[0]) { const r = new FileReader(); r.onload = (e) => document.getElementById('editPreview').src = e.target.result; r.readAsDataURL(input.files[0]); } }
         function logout() { localStorage.clear(); window.location.href = "index.html"; }
-
         document.getElementById('commentModal').addEventListener('hidden.bs.modal', () => { isModalOpen = false; loadTasks(); });
-        setInterval(loadTasks, 5000);
-        window.onload = () => { updateSidebarUI(); loadTasks(); };
+        setInterval(loadTasks, 5000); window.onload = () => { updateSidebarUI(); loadTasks(); };
     </script>
 </body>
 </html>
