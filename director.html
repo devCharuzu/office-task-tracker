@@ -107,6 +107,55 @@
 
         if(!session || session.Role !== "Director") window.location.href = "index.html";
 
+
+        function renderComments(taskId, containerId) {
+    const container = document.getElementById(containerId);
+    const comments = globalData.comments.filter(c => String(c.TaskID) === String(taskId));
+    
+    let html = `<div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                    <span class="fw-bold small">Chat</span>
+                    <button class="btn btn-sm text-danger p-0 small" onclick="deleteAllChat('${taskId}')">Clear Chat</button>
+                </div>
+                <div class="d-flex flex-column" style="height: 300px; overflow-y: auto; padding: 10px;">`;
+
+    html += comments.map(c => {
+        const isOwn = c.SenderName === session.Name;
+        return `
+            <div class="chat-msg ${isOwn ? 'msg-own' : 'msg-theirs'}">
+                ${c.Message}
+                <div class="msg-menu-btn dropdown">
+                    <i class="bi bi-three-dots-vertical" data-bs-toggle="dropdown"></i>
+                    <ul class="dropdown-menu shadow border-0">
+                        <li><a class="dropdown-item unsend-btn" href="#" onclick="unsendMsg('${taskId}', '${c.Message}', '${c.TimeStamp}')">Unsend</a></li>
+                    </ul>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+// NEW FUNCTIONS
+async function unsendMsg(taskId, message, timestamp) {
+    if(!confirm("Unsend this message for everyone?")) return;
+    await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: "DELETE_COMMENT", taskId, message, timestamp })
+    });
+    refreshData(); // Re-sync UI
+}
+
+async function deleteAllChat(taskId) {
+    if(!confirm("Delete entire conversation? This cannot be undone.")) return;
+    await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: "DELETE_ALL_CHAT", taskId })
+    });
+    refreshData();
+}
+
         async function refreshData() {
             try {
                 const res = await fetch(API_URL); 
