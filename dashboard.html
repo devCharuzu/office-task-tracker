@@ -20,7 +20,6 @@
         .chat-msg { padding: 12px 16px; border-radius: 20px; font-size: 0.9rem; max-width: 85%; line-height: 1.4; position: relative; }
         .msg-me { background: var(--primary-grad); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .msg-them { background: #f3f4f6; color: #1f2937; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .attachment-pill { background: rgba(255,255,255,0.2); border-radius: 10px; padding: 5px 10px; display: block; margin-top: 5px; color: inherit; text-decoration: none; font-size: 0.75rem; }
         @media (max-width: 992px) {
             .sidebar { display: none; }
             .mobile-nav { display: flex; justify-content: space-around; }
@@ -76,13 +75,16 @@
     <div class="modal fade" id="profileModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow" style="border-radius: 20px;">
-                <div class="modal-header border-0"><h5 class="fw-bold">Profile</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Account Settings</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-4 text-center">
-                    <img id="editPreview" src="https://via.placeholder.com/100" class="rounded-4 mb-3" style="width:100px; height:100px; object-fit:cover; cursor:pointer" onclick="document.getElementById('editPicInput').click()">
-                    <input type="file" id="editPicInput" class="d-none" onchange="previewImage(this)">
-                    <input type="text" id="editName" class="form-control mb-3 border-0 bg-light" placeholder="Name">
-                    <input type="password" id="editPass" class="form-control mb-3 border-0 bg-light" placeholder="New Password">
-                    <button onclick="saveProfile()" id="saveBtn" class="btn btn-primary w-100 rounded-3 py-2 fw-bold">Save</button>
+                    <div class="position-relative d-inline-block mb-3">
+                        <img id="editPreview" src="https://via.placeholder.com/100" class="rounded-circle shadow-sm" style="width:100px; height:100px; object-fit:cover;">
+                        <button class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" onclick="document.getElementById('editPicInput').click()"><i class="bi bi-camera"></i></button>
+                    </div>
+                    <input type="file" id="editPicInput" class="d-none" accept="image/*" onchange="previewAndCompress(this)">
+                    <input type="text" id="editName" class="form-control mb-3 border-0 bg-light rounded-3" placeholder="Display Name">
+                    <input type="password" id="editPass" class="form-control mb-3 border-0 bg-light rounded-3" placeholder="Change Password">
+                    <button onclick="saveProfile()" id="saveBtn" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Profile</button>
                 </div>
             </div>
         </div>
@@ -92,79 +94,98 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
         let session = JSON.parse(localStorage.getItem('office_session'));
-        let activeTaskId = null, isSending = false, isModalOpen = false, taskReadStatus = {};
+        let activeTaskId = null, isSending = false, isModalOpen = false, taskReadStatus = {}, compressedImg = null;
+
         if (!session) window.location.href = "index.html";
 
         function updateSidebarUI() {
             document.getElementById('userNameDisplay').textContent = session.Name;
             document.getElementById('userIdDisplay').textContent = `ID: ${session.ID}`;
-            if (session.ProfilePic) { document.getElementById('userPic').src = session.ProfilePic + '?t=' + Date.now(); document.getElementById('editPreview').src = session.ProfilePic; }
+            const pic = session.ProfilePic || "https://via.placeholder.com/80";
+            document.getElementById('userPic').src = pic + (pic.includes('?') ? '&' : '?') + 't=' + Date.now();
+            document.getElementById('editPreview').src = pic;
             document.getElementById('editName').value = session.Name;
         }
 
         async function loadTasks() {
             try {
                 const res = await fetch(API_URL); const data = await res.json();
-                const myTasks = data.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
-                renderTasksUI(myTasks, data.comments);
-                if (isModalOpen && activeTaskId) {
-                    const thread = data.comments.filter(c => String(c.TaskID) === String(activeTaskId));
-                    updateChatThreadUI(thread); taskReadStatus[activeTaskId] = thread.length;
-                }
+                renderTasksUI(data.tasks.filter(t => String(t.EmployeeID) === String(session.ID)), data.comments);
+                if (isModalOpen && activeTaskId) renderChat(data.comments.filter(c => String(c.TaskID) === String(activeTaskId)));
             } catch(e) { console.error(e); }
         }
 
         function renderTasksUI(tasks, allComments) {
             document.getElementById('taskContainer').innerHTML = tasks.reverse().map(t => {
                 const count = allComments.filter(c => String(c.TaskID) === String(t.TaskID)).length;
-                const hasNew = count > (taskReadStatus[t.TaskID] || 0);
-                return `
-                    <div class="col-12 col-xl-6">
-                        <div class="card task-card p-4 status-${t.Status}">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <span class="badge rounded-pill mb-2 ${t.Status==='Assigned'?'bg-warning text-dark':(t.Status==='Received'?'bg-primary':'bg-success')}">${t.Status}</span>
-                                    <h5 class="fw-bold mb-1">${t.Title}</h5>
-                                    <p class="text-muted small mb-0">${t.Instructions || ''}</p>
-                                    ${t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="btn btn-sm btn-outline-secondary mt-2 py-0 px-2 rounded-pill small" style="font-size:0.7rem"><i class="bi bi-paperclip"></i> Attached File</a>` : ''}
-                                </div>
-                                <button onclick="openComments('${t.TaskID}', ${count})" class="btn btn-light rounded-circle position-relative"><i class="bi bi-chat-text"></i>${hasNew ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}</button>
-                            </div>
-                            <div class="d-flex gap-2">
-                                ${t.Status==='Assigned'?`<button onclick="updateStatus('${t.TaskID}','Received')" class="btn btn-primary w-100 rounded-pill">Accept</button>`:''}${t.Status==='Received'?`<button onclick="updateStatus('${t.TaskID}','Completed')" class="btn btn-success w-100 rounded-pill">Done</button>`:''}${t.Status==='Completed'?`<div class="text-success small fw-bold"><i class="bi bi-check-all"></i> Completed</div>`:''}
-                            </div>
-                        </div>
-                    </div>`;
-            }).join('') || '<div class="text-center py-5">No tasks yet.</div>';
+                return `<div class="col-12 col-xl-6"><div class="card task-card p-4 status-${t.Status}"><div class="d-flex justify-content-between align-items-start mb-3"><div><span class="badge rounded-pill mb-2 ${t.Status==='Assigned'?'bg-warning text-dark':(t.Status==='Received'?'bg-primary':'bg-success')}">${t.Status}</span><h5 class="fw-bold mb-1">${t.Title}</h5><p class="text-muted small mb-0">${t.Instructions || ''}</p></div><button onclick="openComments('${t.TaskID}', ${count})" class="btn btn-light rounded-circle"><i class="bi bi-chat-text"></i></button></div><div class="d-flex gap-2">${t.Status==='Assigned'?`<button onclick="updateStatus('${t.TaskID}','Received')" class="btn btn-primary w-100 rounded-pill">Accept</button>`:''}${t.Status==='Received'?`<button onclick="updateStatus('${t.TaskID}','Completed')" class="btn btn-success w-100 rounded-pill">Done</button>`:''}</div></div></div>`;
+            }).join('') || '<div class="text-center py-5 w-100">No tasks active</div>';
         }
 
-        async function openComments(taskId, count) { activeTaskId = taskId; taskReadStatus[taskId] = count; isModalOpen = true; new bootstrap.Modal(document.getElementById('commentModal')).show(); loadTasks(); }
-
-        function updateChatThreadUI(thread) {
+        async function openComments(taskId, count) { activeTaskId = taskId; isModalOpen = true; new bootstrap.Modal(document.getElementById('commentModal')).show(); loadTasks(); }
+        
+        function renderChat(thread) {
             const div = document.getElementById('commentThread');
-            const html = thread.map(c => `<div class="chat-msg ${c.SenderName === session.Name ? 'msg-me' : 'msg-them'}"><div class="fw-bold" style="font-size:0.7rem">${c.SenderName}</div>${c.Message}</div>`).join('');
-            if(div.innerHTML !== html) { div.innerHTML = html; div.scrollTop = div.scrollHeight; }
-        }
-
-        async function submitComment() {
-            const input = document.getElementById('commentInput'); if(!input.value.trim() || isSending) return; isSending = true;
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: session.Name, message: input.value.trim() }) });
-            input.value = ''; isSending = false; loadTasks();
+            div.innerHTML = thread.map(c => `<div class="chat-msg ${c.SenderName === session.Name ? 'msg-me' : 'msg-them'}"><div class="fw-bold" style="font-size:0.7rem">${c.SenderName}</div>${c.Message}</div>`).join('');
+            div.scrollTop = div.scrollHeight;
         }
 
         async function updateStatus(taskId, status) { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SET_STATUS", taskId, status }) }); loadTasks(); }
 
-        async function saveProfile() {
-            const file = document.getElementById('editPicInput').files[0]; let fileData = null, fileType = "";
-            if (file) { fileData = await new Promise(r => { const reader = new FileReader(); reader.onload = () => r(reader.result.split(',')[1]); reader.readAsDataURL(file); }); fileType = file.type; }
-            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "UPDATE_PROFILE", id: session.ID, name: document.getElementById('editName').value, pass: document.getElementById('editPass').value, fileData, fileType }) });
-            const result = await res.json(); if (result.status === "SUCCESS") { localStorage.setItem('office_session', JSON.stringify({...session, Name: document.getElementById('editName').value, ProfilePic: result.newPic || session.ProfilePic})); location.reload(); }
+        function previewAndCompress(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 400;
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        compressedImg = canvas.toDataURL('image/jpeg', 0.7);
+                        document.getElementById('editPreview').src = compressedImg;
+                    };
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
         }
 
-        function previewImage(input) { if (input.files && input.files[0]) { const r = new FileReader(); r.onload = (e) => document.getElementById('editPreview').src = e.target.result; r.readAsDataURL(input.files[0]); } }
+        async function saveProfile() {
+            const btn = document.getElementById('saveBtn');
+            const newName = document.getElementById('editName').value;
+            const newPass = document.getElementById('editPass').value;
+            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+
+            const payload = { 
+                action: "UPDATE_PROFILE", 
+                id: session.ID, 
+                name: newName, 
+                pass: newPass, 
+                fileData: compressedImg ? compressedImg.split(',')[1] : null, 
+                fileType: "image/jpeg" 
+            };
+
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await res.json();
+            
+            if (result.status === "SUCCESS") {
+                session.Name = newName;
+                if(result.newPic) session.ProfilePic = result.newPic;
+                localStorage.setItem('office_session', JSON.stringify(session));
+                updateSidebarUI();
+                bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
+                alert("Profile Updated!");
+            }
+            btn.disabled = false; btn.innerHTML = "Update Profile";
+        }
+
         function logout() { localStorage.clear(); window.location.href = "index.html"; }
-        document.getElementById('commentModal').addEventListener('hidden.bs.modal', () => { isModalOpen = false; loadTasks(); });
-        setInterval(loadTasks, 5000); window.onload = () => { updateSidebarUI(); loadTasks(); };
+        window.onload = () => { updateSidebarUI(); loadTasks(); };
+        setInterval(loadTasks, 6000);
     </script>
 </body>
 </html>
