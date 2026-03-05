@@ -146,50 +146,65 @@
         loadTasks();
     }
 
-    // 4. SAVE PROFILE (Real-time Database Sync)
-    async function saveProfile() {
-        const btn = document.getElementById('saveBtn');
-        const fileInput = document.getElementById('editPicInput');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Syncing...';
+    /async function saveProfile() {
+    const btn = document.getElementById('saveBtn');
+    const fileInput = document.getElementById('editPicInput');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Syncing...';
 
-        let fileData = null, fileType = "";
-        if (fileInput.files[0]) {
-            fileData = await new Promise(r => {
-                const reader = new FileReader();
-                reader.onload = () => r(reader.result.split(',')[1]);
-                reader.readAsDataURL(fileInput.files[0]);
-            });
-            fileType = fileInput.files[0].type;
-        }
-
-        const payload = {
-            action: "UPDATE_PROFILE",
-            id: session.ID,
-            name: document.getElementById('editName').value,
-            pass: document.getElementById('editPass').value || session.Password,
-            fileData, fileType
-        };
-
-        try {
-            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-            const result = await res.json();
-            
-            if (result.status === "SUCCESS") {
-                // UPDATE LOCAL STATE IMMEDIATELY
-                session.Name = payload.name;
-                if (payload.pass) session.Password = payload.pass;
-                // If the server returns a new Pic URL, update it
-                // We re-fetch data to be sure or manually update
-                localStorage.setItem('office_session', JSON.stringify(session));
-                updateSidebarUI();
-                bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
-                alert("Profile Updated!");
-                location.reload(); // Refresh to sync the ProfilePic URL from the sheet
-            }
-        } catch (e) { alert("Update failed. Check connection."); }
-        finally { btn.disabled = false; btn.innerText = "Save Changes"; }
+    let fileData = null, fileType = "";
+    if (fileInput.files[0]) {
+        fileData = await new Promise(r => {
+            const reader = new FileReader();
+            reader.onload = () => r(reader.result.split(',')[1]);
+            reader.readAsDataURL(fileInput.files[0]);
+        });
+        fileType = fileInput.files[0].type;
     }
+
+    const payload = {
+        action: "UPDATE_PROFILE",
+        id: session.ID,
+        name: document.getElementById('editName').value,
+        pass: document.getElementById('editPass').value || session.Password,
+        fileData, fileType
+    };
+
+    try {
+        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+        const result = await res.json();
+        
+        if (result.status === "SUCCESS") {
+            // 1. Update the local session object with new data
+            session.Name = payload.name;
+            if (payload.pass) session.Password = payload.pass;
+            
+            // 2. Update the Profile Picture URL from the server's response
+            if (result.newPic) {
+                session.ProfilePic = result.newPic;
+            }
+
+            // 3. Save back to localStorage
+            localStorage.setItem('office_session', JSON.stringify(session));
+            
+            // 4. Hot-swap the UI elements (No reload needed!)
+            updateSidebarUI();
+            
+            // 5. Close modal and notify
+            const modalEl = document.getElementById('profileModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            modalInstance.hide();
+            
+            alert("✅ Profile & Picture updated successfully!");
+        }
+    } catch (e) { 
+        console.error(e);
+        alert("Update failed. Check your internet or Apps Script deployment."); 
+    } finally { 
+        btn.disabled = false; 
+        btn.innerText = "Save Changes"; 
+    }
+}
 
     function previewImage(input) {
         if (input.files && input.files[0]) {
