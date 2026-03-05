@@ -90,8 +90,8 @@
     let session = JSON.parse(localStorage.getItem('office_session'));
     let activeTaskId = null;
     let isSending = false;
-    let lastCommentCount = 0; 
     let isModalOpen = false;
+    let taskReadStatus = {}; // Tracks read counts per task
 
     if (!session) window.location.href = "index.html";
 
@@ -106,30 +106,29 @@
         document.getElementById('editName').value = session.Name;
     }
 
-    async function loadTasks(isSilent = false) {
+    async function loadTasks() {
         try {
             const res = await fetch(API_URL);
             const data = await res.json();
             const myTasks = data.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
             
-            // Re-render tasks only if not silent OR if comment count changed
-            const currentComments = data.comments.length;
-            if (!isSilent || currentComments !== lastCommentCount) {
-                lastCommentCount = currentComments;
-                renderTasksUI(myTasks, data.comments);
-            }
+            renderTasksUI(myTasks, data.comments);
 
-            // Real-time chat update if modal is open
             if (isModalOpen && activeTaskId) {
-                updateChatThreadUI(data.comments.filter(c => String(c.TaskID) === String(activeTaskId)));
+                const thread = data.comments.filter(c => String(c.TaskID) === String(activeTaskId));
+                updateChatThreadUI(thread);
+                taskReadStatus[activeTaskId] = thread.length; // Mark as read while open
             }
-        } catch(e) { console.error("Real-time sync failed", e); }
+        } catch(e) { console.error("Sync Error", e); }
     }
 
     function renderTasksUI(tasks, allComments) {
         document.getElementById('taskContainer').innerHTML = tasks.reverse().map(t => {
-            const taskComments = allComments.filter(c => String(c.TaskID) === String(t.TaskID));
-            const hasComments = taskComments.length > 0;
+            const thread = allComments.filter(c => String(c.TaskID) === String(t.TaskID));
+            const currentCount = thread.length;
+            const lastReadCount = taskReadStatus[t.TaskID] || 0;
+            const hasNew = currentCount > lastReadCount;
+
             return `
                 <div class="col-12">
                     <div class="card task-card p-3 shadow-sm status-${t.Status}">
@@ -140,9 +139,9 @@
                                 <p class="small text-muted mb-0">${t.Instructions || ''}</p>
                             </div>
                             <div class="text-end">
-                                <button onclick="openComments('${t.TaskID}')" class="btn btn-sm btn-outline-secondary position-relative">
+                                <button onclick="openComments('${t.TaskID}', ${currentCount})" class="btn btn-sm btn-outline-secondary position-relative">
                                     <i class="bi bi-chat-dots"></i> Concern
-                                    ${hasComments ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
+                                    ${hasNew ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
                                 </button>
                                 <div class="mt-2">
                                     ${t.Status === 'Assigned' ? `<button onclick="updateStatus('${t.TaskID}', 'Received')" class="btn btn-primary btn-sm rounded-pill px-3">Accept</button>` : ''}
@@ -156,17 +155,17 @@
         }).join('') || '<div class="text-center py-5 text-muted">No tasks assigned yet.</div>';
     }
 
-    async function openComments(taskId) {
+    async function openComments(taskId, count) {
         activeTaskId = taskId;
+        taskReadStatus[taskId] = count; // Set read count to current
         isModalOpen = true;
         const modal = new bootstrap.Modal(document.getElementById('commentModal'));
         modal.show();
-        loadTasks(false); 
+        loadTasks(); 
     }
 
     function updateChatThreadUI(thread) {
         const threadDiv = document.getElementById('commentThread');
-        const currentHtml = threadDiv.innerHTML;
         const newHtml = thread.map(c => `
             <div class="chat-msg ${c.SenderName === session.Name ? 'msg-me' : 'msg-them'}">
                 <div style="font-size:0.65rem; opacity:0.8">${c.SenderName}</div>
@@ -174,7 +173,7 @@
             </div>
         `).join('') || '<div class="text-center mt-5 small text-muted">No messages yet.</div>';
 
-        if (currentHtml !== newHtml) {
+        if (threadDiv.innerHTML !== newHtml) {
             threadDiv.innerHTML = newHtml;
             threadDiv.scrollTop = threadDiv.scrollHeight;
         }
@@ -183,29 +182,20 @@
     async function submitComment() {
         const btn = document.getElementById('sendCommentBtn');
         const input = document.getElementById('commentInput');
-        const msg = input.value.trim();
-        if (!msg || isSending) return;
+        if (!input.value.trim() || isSending) return;
 
-        isSending = true;
-        btn.disabled = true;
-        const original = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
+        isSending = true; btn.disabled = true;
         await fetch(API_URL, { 
             method: 'POST', 
-            body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: session.Name, message: msg }) 
+            body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: session.Name, message: input.value.trim() }) 
         });
-        
-        input.value = '';
-        isSending = false;
-        btn.disabled = false;
-        btn.innerHTML = original;
-        loadTasks(false); 
+        input.value = ''; isSending = false; btn.disabled = false;
+        loadTasks();
     }
 
     async function updateStatus(taskId, status) {
         await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SET_STATUS", taskId, status }) });
-        loadTasks(false);
+        loadTasks();
     }
 
     async function saveProfile() {
@@ -232,14 +222,13 @@
 
     document.getElementById('commentModal').addEventListener('hidden.bs.modal', () => {
         isModalOpen = false;
-        activeTaskId = null;
         const backdrops = document.querySelectorAll('.modal-backdrop');
         backdrops.forEach(b => b.remove());
         document.body.style.overflow = 'auto';
+        loadTasks(); // Update dots on close
     });
 
-    // REAL-TIME POLLING: Every 5 seconds
-    setInterval(() => loadTasks(true), 5000);
+    setInterval(loadTasks, 5000);
     window.onload = () => { updateSidebarUI(); loadTasks(); };
 </script>
 </body>
