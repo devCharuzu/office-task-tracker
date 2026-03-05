@@ -86,50 +86,35 @@
      * LOGIN LOGIC
      */
     async function login() {
-        const idInput = document.getElementById('loginId').value.trim();
-        const passInput = document.getElementById('loginPass').value.trim();
-        const btn = document.getElementById('loginBtn');
+    const idInput = document.getElementById('userId').value;
+    const passInput = document.getElementById('password').value;
+    const btn = document.querySelector('button');
 
-        if (!idInput || !passInput) return alert("Please enter both ID and Password");
+    if(!idInput || !passInput) return alert("Please fill all fields");
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-        btn.disabled = true;
-        btn.innerHTML = '<span class="loader"></span> Verifying...';
+    try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        const user = data.users.find(u => String(u.ID) === idInput && String(u.Password) === passInput);
 
-        try {
-            // Updated to use the secure POST login method
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    action: "LOGIN", 
-                    id: idInput, 
-                    pass: passInput 
-                })
-            });
-            
-            const result = await res.json();
-
-            if (result.success) {
-                // IMPORTANT: Save the user object exactly as returned by GSheets
-                localStorage.setItem('office_session', JSON.stringify(result.user));
-                
-                // Redirect based on Role (Capitalized as per GSheet headers)
-                if (result.user.Role === "Director") {
-                    window.location.href = "director.html";
-                } else {
-                    window.location.href = "dashboard.html";
-                }
-            } else {
-                alert("❌ Invalid ID or Password.");
-                btn.disabled = false;
-                btn.innerText = "Sign In";
-            }
-        } catch (e) {
-            console.error(e);
-            alert("Connection error. Check console for details.");
+        if (user) {
+            localStorage.setItem('office_session', JSON.stringify(user));
+            window.location.href = user.Role === "Director" ? "director.html" : "dashboard.html";
+        } else {
+            alert("Invalid ID or Password");
             btn.disabled = false;
-            btn.innerText = "Sign In";
+            btn.innerHTML = "Login";
         }
+    } catch (e) {
+        console.error(e);
+        alert("System Error: Check Internet or API Deployment.");
+        btn.disabled = false;
+        btn.innerHTML = "Login";
     }
+}
 
     /**
      * REGISTRATION LOGIC
