@@ -11,7 +11,7 @@
         body { background: #f3f4f6; font-family: 'Inter', sans-serif; color: #1f2937; margin: 0; overflow-x: hidden; }
         .sidebar { background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; width: 260px; z-index: 1000; }
         .mobile-nav { display: none; position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; z-index: 1001; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
-        .main-content { margin-left: 260px; padding: 40px; min-height: 100vh; transition: 0.3s; }
+        .main-content { margin-left: 260px; padding: 40px; min-height: 100vh; }
         .card-custom { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: 0.3s; }
         .status-pill { font-size: 0.7rem; padding: 4px 10px; border-radius: 8px; font-weight: 700; text-transform: uppercase; }
         .bg-assigned { background: #fff7ed; color: #c2410c; }
@@ -30,67 +30,68 @@
 <body>
     <aside class="sidebar p-4 d-none d-lg-block">
         <div class="d-flex align-items-center mb-5"><div class="bg-dark p-2 rounded-3 me-2"><i class="bi bi-shield-lock text-white"></i></div><span class="fw-bold fs-5">Director</span></div>
+        <div class="mb-5 text-center">
+            <img id="dirPic" src="https://via.placeholder.com/80" class="rounded-circle mb-2" style="width:80px; height:80px; object-fit:cover;">
+            <h6 id="dirNameDisplay" class="fw-bold m-0">---</h6>
+        </div>
         <nav class="nav flex-column gap-2">
             <a class="nav-link active rounded-3 bg-light text-dark fw-bold" href="#"><i class="bi bi-kanban me-2"></i> Monitor</a>
-            <a class="nav-link text-muted" href="javascript:void(0)" onclick="refreshData()"><i class="bi bi-arrow-repeat me-2"></i> Refresh</a>
+            <a class="nav-link text-muted" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#profileModal"><i class="bi bi-person-gear me-2"></i> Profile</a>
             <a class="nav-link text-danger mt-5" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
         </nav>
     </aside>
 
     <div class="mobile-nav d-lg-none">
         <a href="#" class="text-dark text-center flex-grow-1"><i class="bi bi-kanban fs-4"></i></a>
-        <a href="javascript:void(0)" onclick="refreshData()" class="text-muted text-center flex-grow-1"><i class="bi bi-arrow-repeat fs-4"></i></a>
+        <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#profileModal" class="text-muted text-center flex-grow-1"><i class="bi bi-person-gear fs-4"></i></a>
         <a href="javascript:void(0)" onclick="logout()" class="text-danger text-center flex-grow-1"><i class="bi bi-power fs-4"></i></a>
     </div>
 
     <main class="main-content">
-        <header class="d-flex justify-content-between align-items-center mb-4">
-            <div><h3 class="fw-bold">Director Control</h3><p class="text-muted small">Task Management & File Distribution</p></div>
-        </header>
-
         <div class="row g-4">
-            <div class="col-xl-4 col-12">
-                <div class="card card-custom p-4">
-                    <h6 class="fw-bold mb-4"><i class="bi bi-plus-lg me-2"></i>Assign Task</h6>
-                    <div class="mb-3"><label class="small fw-bold text-muted">Assign To</label><select id="empSelect" class="form-select border-0 bg-light rounded-3"></select></div>
-                    <div class="mb-3"><label class="small fw-bold text-muted">Task Title</label><input type="text" id="taskTitle" class="form-control border-0 bg-light rounded-3"></div>
-                    <div class="mb-3"><label class="small fw-bold text-muted">Instructions</label><textarea id="taskInstructions" class="form-control border-0 bg-light rounded-3" rows="2"></textarea></div>
-                    
-                    <div class="mb-4">
-                        <label class="small fw-bold text-muted">Attach File (Optional)</label>
-                        <div class="input-group">
-                            <input type="file" id="taskFile" class="form-control border-0 bg-light rounded-3 small">
-                        </div>
-                        <small class="text-muted" style="font-size: 0.65rem;">PDF, Images, or Docs supported.</small>
-                    </div>
-
-                    <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold shadow-sm">Send Assignment</button>
+            <div class="col-xl-4">
+                <div class="card card-custom p-4 shadow-sm">
+                    <h6 class="fw-bold mb-4">Assign Task</h6>
+                    <div class="mb-3"><select id="empSelect" class="form-select border-0 bg-light rounded-3"></select></div>
+                    <div class="mb-3"><input type="text" id="taskTitle" class="form-control border-0 bg-light rounded-3" placeholder="Title"></div>
+                    <div class="mb-3"><textarea id="taskInstructions" class="form-control border-0 bg-light rounded-3" rows="2" placeholder="Instructions"></textarea></div>
+                    <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold">Send</button>
                 </div>
             </div>
-
-            <div class="col-xl-8 col-12">
-                <div class="card card-custom p-4 h-100">
+            <div class="col-xl-8">
+                <div class="card card-custom p-4">
                     <h6 class="fw-bold mb-4">Live Monitor</h6>
-                    <div class="table-responsive">
-                        <table class="table align-middle border-0">
-                            <thead><tr class="text-muted small"><th>Employee</th><th>Task</th><th>Status</th><th class="text-center">Chat</th></tr></thead>
-                            <tbody id="taskTableBody"></tbody>
-                        </table>
-                    </div>
+                    <div class="table-responsive"><table class="table align-middle border-0"><tbody id="taskTableBody"></tbody></table></div>
                 </div>
             </div>
         </div>
     </main>
 
+    <div class="modal fade" id="profileModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+                <div class="modal-body p-4 text-center">
+                    <div class="position-relative d-inline-block mb-3">
+                        <img id="editPreview" src="https://via.placeholder.com/100" class="rounded-circle shadow-sm" style="width:100px; height:100px; object-fit:cover;">
+                        <button class="btn btn-sm btn-dark position-absolute bottom-0 end-0 rounded-circle" onclick="document.getElementById('editPicInput').click()"><i class="bi bi-camera"></i></button>
+                    </div>
+                    <input type="file" id="editPicInput" class="d-none" accept="image/*" onchange="previewAndCompress(this)">
+                    <input type="text" id="editName" class="form-control mb-3 border-0 bg-light rounded-3" placeholder="Name">
+                    <input type="password" id="editPass" class="form-control mb-3 border-0 bg-light rounded-3" placeholder="New Password">
+                    <button onclick="saveProfile()" id="saveBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold">Save Profile</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="commentModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
-                <div class="modal-header border-0 p-4 pb-0"><h5 class="fw-bold">Team Communication</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body d-flex flex-column p-0">
-                    <div id="commentThread" class="p-4 d-flex flex-column gap-3" style="height: 450px; overflow-y: auto; background: #fafafa;"></div>
+                    <div id="commentThread" class="p-4 d-flex flex-column gap-3" style="height: 400px; overflow-y: auto; background: #fafafa;"></div>
                     <div class="p-3 bg-white border-top"><div class="input-group">
-                        <input type="text" id="commentInput" class="form-control border-0 bg-light rounded-start-pill px-3" placeholder="Reply...">
-                        <button class="btn btn-dark rounded-end-pill px-4" onclick="submitComment()" id="sendCommentBtn"><i class="bi bi-send-fill"></i></button>
+                        <input type="text" id="commentInput" class="form-control border-0 bg-light rounded-pill px-3" placeholder="Reply...">
+                        <button class="btn btn-dark rounded-pill ms-2 px-4" onclick="submitComment()"><i class="bi bi-send-fill"></i></button>
                     </div></div>
                 </div>
             </div>
@@ -100,99 +101,85 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
-        let globalData = { users: [], tasks: [], comments: [] };
-        let activeTaskId = null, isSending = false, isModalOpen = false, taskReadStatus = {};
+        let globalData = { users: [], tasks: [], comments: [] }, session = JSON.parse(localStorage.getItem('office_session')), compressedImg = null;
 
         async function refreshData() {
             try {
                 const res = await fetch(API_URL); globalData = await res.json();
                 renderEmployees(); renderTasks();
-                if (isModalOpen && activeTaskId) {
-                    const thread = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
-                    renderThread(thread); taskReadStatus[activeTaskId] = thread.length;
+                if (document.getElementById('commentModal').classList.contains('show')) {
+                    const thread = globalData.comments.filter(c => String(c.TaskID) === String(window.activeTaskId));
+                    document.getElementById('commentThread').innerHTML = thread.map(c => `<div class="chat-msg ${c.SenderName === 'Director' ? 'msg-me' : 'msg-them'}">${c.Message}</div>`).join('');
                 }
             } catch (e) { console.error(e); }
         }
 
-        function renderEmployees() {
-            const select = document.getElementById('empSelect');
-            select.innerHTML = globalData.users.filter(u => u.Role !== 'Director').map(u => `<option value="${u.ID}">${u.Name} (${u.Office})</option>`).join('');
-        }
-
+        function renderEmployees() { document.getElementById('empSelect').innerHTML = globalData.users.filter(u => u.Role !== 'Director').map(u => `<option value="${u.ID}">${u.Name}</option>`).join(''); }
         function renderTasks() {
-            const tbody = document.getElementById('taskTableBody');
-            tbody.innerHTML = globalData.tasks.slice().reverse().map(t => {
-                const emp = globalData.users.find(u => String(u.ID) === String(t.EmployeeID)) || {};
-                const count = globalData.comments.filter(c => String(c.TaskID) === String(t.TaskID)).length;
-                const hasNew = count > (taskReadStatus[t.TaskID] || 0);
-                return `
-                    <tr class="border-bottom">
-                        <td class="py-3"><div class="fw-bold small">${emp.Name || '---'}</div><div class="text-muted small" style="font-size:0.7rem">${emp.Office || ''}</div></td>
-                        <td>
-                            <div class="small fw-bold">${t.Title}</div>
-                            ${t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="small text-primary text-decoration-none" style="font-size:0.65rem"><i class="bi bi-link-45deg"></i> View Attachment</a>` : ''}
-                        </td>
-                        <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
-                        <td class="text-center"><button onclick="openComments('${t.TaskID}', ${count})" class="btn btn-light rounded-circle position-relative"><i class="bi bi-chat-left-dots text-primary fs-5"></i>${hasNew ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}</button></td>
-                    </tr>`;
-            }).join('');
+            document.getElementById('taskTableBody').innerHTML = globalData.tasks.slice().reverse().map(t => `
+                <tr class="border-bottom">
+                    <td class="py-3"><div class="fw-bold small">${t.EmployeeName}</div></td>
+                    <td><div class="small fw-bold">${t.Title}</div></td>
+                    <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
+                    <td class="text-center"><button onclick="openChat('${t.TaskID}')" class="btn btn-light rounded-circle"><i class="bi bi-chat-dots"></i></button></td>
+                </tr>`).join('');
+        }
+        function openChat(id) { window.activeTaskId = id; new bootstrap.Modal(document.getElementById('commentModal')).show(); refreshData(); }
+
+        function previewAndCompress(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 400;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * (MAX_WIDTH / img.width);
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                        compressedImg = canvas.toDataURL('image/jpeg', 0.7);
+                        document.getElementById('editPreview').src = compressedImg;
+                    };
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
         }
 
-        async function openComments(taskId, count) { activeTaskId = taskId; taskReadStatus[taskId] = count; isModalOpen = true; new bootstrap.Modal(document.getElementById('commentModal')).show(); refreshData(); }
-
-        function renderThread(thread) {
-            const div = document.getElementById('commentThread');
-            const html = thread.map(c => `<div class="chat-msg ${c.SenderName === 'Director' ? 'msg-me' : 'msg-them'}"><div class="fw-bold" style="font-size:0.7rem">${c.SenderName}</div>${c.Message}</div>`).join('');
-            if(div.innerHTML !== html) { div.innerHTML = html; div.scrollTop = div.scrollHeight; }
-        }
-
-        async function submitComment() {
-            const input = document.getElementById('commentInput'); if(!input.value.trim() || isSending) return; isSending = true;
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, senderName: "Director", message: input.value.trim() }) });
-            input.value = ''; isSending = false; refreshData();
+        async function saveProfile() {
+            const btn = document.getElementById('saveBtn'); btn.disabled = true;
+            const payload = { 
+                action: "UPDATE_PROFILE", 
+                id: session.ID, 
+                name: document.getElementById('editName').value, 
+                pass: document.getElementById('editPass').value, 
+                fileData: compressedImg ? compressedImg.split(',')[1] : null, fileType: "image/jpeg" 
+            };
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await res.json();
+            if (result.status === "SUCCESS") {
+                session.Name = document.getElementById('editName').value;
+                if(result.newPic) session.ProfilePic = result.newPic;
+                localStorage.setItem('office_session', JSON.stringify(session));
+                location.reload();
+            }
         }
 
         async function createTask() {
-            const btn = document.getElementById('createBtn');
-            const fileInput = document.getElementById('taskFile');
             const empId = document.getElementById('empSelect').value;
             const emp = globalData.users.find(u => String(u.ID) === String(empId));
-            
-            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending...';
-            
-            let fileData = null, fileName = "";
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                fileName = file.name;
-                fileData = await new Promise(r => { 
-                    const reader = new FileReader(); 
-                    reader.onload = () => r(reader.result.split(',')[1]); 
-                    reader.readAsDataURL(file); 
-                });
-            }
-
-            const payload = { 
-                action: "CREATE_TASK", 
-                empId, empName: emp.Name, 
-                office: emp.Office, 
-                title: document.getElementById('taskTitle').value, 
-                instructions: document.getElementById('taskInstructions').value,
-                fileData, fileName 
-            };
-
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-            
-            alert("Task & File Dispatched!");
-            document.getElementById('taskTitle').value = "";
-            document.getElementById('taskInstructions').value = "";
-            fileInput.value = "";
-            btn.disabled = false; btn.innerHTML = "Send Assignment";
-            refreshData();
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CREATE_TASK", empId, empName: emp.Name, title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value }) });
+            alert("Task Sent"); refreshData();
         }
 
         function logout() { localStorage.clear(); window.location.href = "index.html"; }
-        document.getElementById('commentModal').addEventListener('hidden.bs.modal', () => { isModalOpen = false; refreshData(); });
-        setInterval(refreshData, 5000); window.onload = refreshData;
+        window.onload = () => { 
+            document.getElementById('dirNameDisplay').textContent = session.Name; 
+            document.getElementById('dirPic').src = session.ProfilePic || "https://via.placeholder.com/80";
+            document.getElementById('editName').value = session.Name;
+            refreshData(); 
+        };
+        setInterval(refreshData, 6000);
     </script>
 </body>
 </html>
