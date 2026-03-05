@@ -172,17 +172,35 @@
         }
 
         async function createTask() {
-            const btn = document.getElementById('createBtn'); btn.disabled = true;
-            const fileInput = document.getElementById('taskFile');
-            let fileData = null, fileName = "";
-            if (fileInput.files[0]) {
-                fileName = fileInput.files[0].name;
-                fileData = await new Promise(r => { const reader = new FileReader(); reader.onload = () => r(reader.result.split(',')[1]); reader.readAsDataURL(fileInput.files[0]); });
-            }
-            const empId = document.getElementById('empSelect').value; const emp = globalData.users.find(u => String(u.ID) === String(empId));
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CREATE_TASK", empId, empName: emp.Name, title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value, fileData, fileName })});
-            btn.disabled = false; refreshData();
-        }
+    const btn = document.getElementById('createBtn'); 
+    const empId = document.getElementById('empSelect').value;
+    const title = document.getElementById('taskTitle').value;
+    const inst = document.getElementById('taskInstructions').value;
+
+    if(!empId || !title) return alert("Select Employee and Title");
+
+    btn.disabled = true;
+    btn.innerHTML = "Dispatching...";
+
+    const employee = globalData.users.find(u => String(u.ID) === String(empId));
+    
+    const payload = {
+        action: "CREATE_TASK",
+        empId: empId,
+        empName: employee.Name,
+        title: title,
+        instructions: inst
+    };
+
+    await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+    
+    // Reset form
+    document.getElementById('taskTitle').value = "";
+    document.getElementById('taskInstructions').value = "";
+    btn.disabled = false;
+    btn.innerHTML = "Dispatch Task";
+    refreshData();
+}
 
         function previewAndCompress(input) {
             if (input.files && input.files[0]) {
