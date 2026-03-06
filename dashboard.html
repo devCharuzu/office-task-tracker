@@ -42,7 +42,7 @@
             display: flex;
             flex-direction: column;
         }
-        .chat-spacer { flex: 1 1 auto; }
+
 
         .msg-bubble {
             padding: 10px 16px; border-radius: 18px; font-size: 0.9rem;
@@ -428,7 +428,6 @@ function renderComments() {
 
     container.innerHTML = `
         <div class="chat-container" id="chatScroll">
-            <div class="chat-spacer"></div>
             ${bubbles}
         </div>
         <div class="chat-input-bar">
@@ -441,7 +440,6 @@ function renderComments() {
             </div>
         </div>`;
 
-    scrollToBottom();
 }
 
 async function sendMsg() {
