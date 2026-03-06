@@ -246,32 +246,50 @@
             } catch (e) { console.error("Sync error"); }
         }
 
-        function renderTasks(tasks, id, isArch = false) {
-            document.getElementById(id).innerHTML = tasks.reverse().map(t => {
-                const fileIcon = t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="text-primary ms-2"><i class="bi bi-paperclip"></i></a>` : '';
-                return `
-                    <tr class="border-bottom">
-                        <td class="py-3"><b>${t.EmployeeName}</b> ${fileIcon}<br><small class="text-muted">${t.Title}</small></td>
-                        <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
-                        <td class="text-end">
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown">
-                                    <i class="bi bi-three-dots-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                    <li><a class="dropdown-item small" href="#" onclick="openEditModal('${t.TaskID}')"><i class="bi bi-pencil me-2"></i> Edit Task</a></li>
-                                    <li><a class="dropdown-item small text-primary" href="#" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots me-2"></i> Chat</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item small" href="#" onclick="toggleArch('${t.TaskID}', ${!isArch})">
-                                        <i class="bi bi-${isArch?'arrow-up':'archive'} me-2"></i> ${isArch?'Restore':'Archive'}
-                                    </a></li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>`;
-            }).join('') || '<tr><td colspan="3" class="text-center py-4">No data.</td></tr>';
-        }
+       function renderTasks(tasks, id, isArch = false) {
+    const priorityBadge = {
+        'Urgent': 'danger',
+        'High': 'warning',
+        'Medium': 'info',
+        'Low': 'secondary',
+        'Normal': 'success'
+    };
 
+    document.getElementById(id).innerHTML = tasks.reverse().map(t => {
+        const priorityColor = priorityBadge[t.Priority] || 'success';
+        const deadlineHtml = t.Deadline ? `<br><small class="text-danger"><i class="bi bi-clock me-1"></i>Due: ${new Date(t.Deadline).toLocaleString()}</small>` : '';
+        const priorityHtml = t.Priority ? `<span class="badge bg-${priorityColor} bg-opacity-10 text-${priorityColor} border border-${priorityColor} ms-1" style="font-size:0.6rem;">${t.Priority}</span>` : '';
+        const categoryHtml = t.Category ? `<span class="badge bg-light text-dark border ms-1" style="font-size:0.6rem;">${t.Category}</span>` : '';
+        const fileIcon = t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="text-primary ms-2"><i class="bi bi-paperclip"></i></a>` : '';
+
+        return `
+        <tr class="border-bottom">
+            <td class="py-3">
+                <b>${t.EmployeeName}</b> ${fileIcon}
+                <br>
+                <small class="text-muted">${t.Title}</small>
+                ${categoryHtml}${priorityHtml}
+                ${deadlineHtml}
+            </td>
+            <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
+            <td class="text-end">
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                        <li><a class="dropdown-item small" href="#" onclick="openEditModal('${t.TaskID}')"><i class="bi bi-pencil me-2"></i> Edit Task</a></li>
+                        <li><a class="dropdown-item small text-primary" href="#" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots me-2"></i> Chat</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item small" href="#" onclick="toggleArch('${t.TaskID}', ${!isArch})">
+                            <i class="bi bi-${isArch ? 'arrow-up' : 'archive'} me-2"></i> ${isArch ? 'Restore' : 'Archive'}
+                        </a></li>
+                    </ul>
+                </div>
+            </td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="3" class="text-center py-4">No data.</td></tr>';
+}
      function openEditModal(taskId) {
     const task = globalData.tasks.find(t => String(t.TaskID) === String(taskId));
     if(!task) return;
