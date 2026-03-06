@@ -6,113 +6,176 @@
     <title>Director Panel | TaskFlow Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --messenger-blue: #0084ff; --messenger-bg: #f0f2f5; --sidebar-width: 280px; }
-        body { background: #f3f4f6; font-family: 'Inter', sans-serif; margin: 0; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-        #globalLoader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.8); display: none;
-            flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
+        :root {
+            --blue: #2563eb;
+            --blue-light: #eff6ff;
+            --blue-dark: #1e40af;
+            --accent: #0ea5e9;
+            --bg: #f0f4f8;
+            --surface: #ffffff;
+            --surface-2: #f8fafc;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --text-faint: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --messenger-blue: #2563eb;
+            --messenger-bg: #f0f4f8;
+            --sidebar-width: 260px;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
         }
 
-        .sidebar { background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; width: var(--sidebar-width); z-index: 1000; padding: 30px; }
-        .main-content { margin-left: var(--sidebar-width); padding: 40px; min-height: 100vh; transition: 0.3s; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; color: var(--text); }
+
+        /* LOADER */
+        #globalLoader {
+            position: fixed; inset: 0; background: rgba(255,255,255,0.9);
+            display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            background: var(--surface); border-right: 1px solid var(--border);
+            height: 100vh; position: fixed; width: var(--sidebar-width);
+            z-index: 1000; padding: 28px 20px; display: flex; flex-direction: column;
+            overflow-y: auto;
+        }
+        .sidebar-logo { font-size: 0.95rem; font-weight: 800; color: var(--blue); display: flex; align-items: center; gap: 8px; margin-bottom: 28px; letter-spacing: -0.02em; }
+        .sidebar-avatar { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--blue-light); object-fit: cover; }
+        .sidebar .nav-link { border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.875rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 10px; transition: background 0.15s, color 0.15s; }
+        .sidebar .nav-link:hover { background: var(--surface-2); color: var(--text); }
+        .sidebar .nav-link.active { background: var(--blue-light); color: var(--blue); }
+        .sidebar .nav-link.text-danger { color: var(--danger) !important; }
+        .sidebar .nav-link.text-danger:hover { background: #fff1f2; }
+
+        .main-content { margin-left: var(--sidebar-width); padding: 32px; min-height: 100vh; }
         .mobile-nav { display: none; }
 
-        .card-custom { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 20px; }
-        .status-pill { font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
-        .bg-assigned { background: #fff7ed; color: #c2410c; }
-        .bg-received { background: #eff6ff; color: #1d4ed8; }
+        /* CARDS */
+        .card-custom { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px; }
+
+        /* STATUS PILLS */
+        .status-pill { font-size: 0.62rem; padding: 4px 10px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .bg-assigned  { background: #fff7ed; color: #c2410c; }
+        .bg-received  { background: var(--blue-light); color: var(--blue-dark); }
         .bg-completed { background: #f0fdf4; color: #15803d; }
 
-        /* CHAT - fixed scroll */
-        .chat-modal-body { height: 500px; display: flex; flex-direction: column; overflow: hidden; }
-        .chat-container {
-            flex: 1 1 0;
-            overflow-y: auto;
-            padding: 16px;
-            background: var(--messenger-bg);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .msg-bubble { padding: 10px 16px; border-radius: 18px; font-size: 0.9rem; max-width: 85%; margin-bottom: 8px; word-break: break-word; flex-shrink: 0; }
-        .own { align-self: flex-end; background: var(--messenger-blue); color: white; border-bottom-right-radius: 4px; }
-        .theirs { align-self: flex-start; background: white; color: black; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .chat-input-bar { flex-shrink: 0; padding: 12px 16px; background: white; border-top: 1px solid #e5e7eb; }
-        .chat-attach-preview { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px 0; background: white; }
+        /* CHAT */
+        .chat-modal-body { height: 520px; display: flex; flex-direction: column; overflow: hidden; }
+        .chat-container { flex: 1 1 0; overflow-y: auto; padding: 16px; background: var(--messenger-bg); display: flex; flex-direction: column; scroll-behavior: smooth; }
+        .msg-bubble { padding: 10px 14px; border-radius: 18px; font-size: 0.875rem; max-width: 78%; margin-bottom: 6px; word-break: break-word; flex-shrink: 0; line-height: 1.45; }
+        .own { align-self: flex-end; background: var(--blue); color: white; border-bottom-right-radius: 4px; }
+        .theirs { align-self: flex-start; background: var(--surface); color: var(--text); border-bottom-left-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .chat-input-bar { flex-shrink: 0; padding: 12px 14px; background: var(--surface); border-top: 1px solid var(--border); }
+        .chat-attach-preview { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px 0; background: var(--surface); }
         .chat-attach-item { position: relative; display: inline-flex; flex-direction: column; align-items: center; }
-        .chat-attach-item .remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
-        .chat-file-bubble { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.2); border-radius: 10px; padding: 6px 10px; margin-top: 6px; cursor: pointer; }
-        .chat-file-bubble:hover { background: rgba(255,255,255,0.35); }
-        .chat-file-bubble.theirs-file { background: #f3f4f6; color: #111; }
-        .chat-file-bubble.theirs-file:hover { background: #e5e7eb; }
+        .chat-attach-item .remove-btn { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+        .chat-file-bubble { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.22); border-radius: 10px; padding: 6px 10px; margin-top: 6px; cursor: pointer; transition: background 0.15s; }
+        .chat-file-bubble:hover { background: rgba(255,255,255,0.38); }
+        .chat-file-bubble.theirs-file { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+        .chat-file-bubble.theirs-file:hover { background: var(--border); }
         .spinner-btn { width: 1rem; height: 1rem; border-width: 0.15em; }
 
+        /* NOTIFICATIONS */
         .notif-bell { position: relative; cursor: pointer; }
-        .notif-badge {
-            position: absolute; top: -5px; right: -5px;
-            background: #ef4444; color: white; border-radius: 50%;
-            width: 18px; height: 18px; font-size: 0.6rem;
-            display: flex; align-items: center; justify-content: center; font-weight: 700;
-        }
-        .notif-dropdown {
-            position: absolute; left: 0; top: 40px;
-            width: 320px; background: white; border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15); z-index: 9000;
-            display: none; overflow: hidden;
-        }
-        .notif-dropdown.show { display: block; }
-        .notif-item { padding: 12px 16px; border-bottom: 1px solid #f3f4f6; font-size: 0.82rem; cursor: pointer; transition: 0.2s; }
-        .notif-item:hover { background: #f9fafb; }
-        .notif-item.unread { background: #eff6ff; border-left: 3px solid #3b82f6; }
-        .notif-time { font-size: 0.7rem; color: #9ca3af; margin-top: 2px; }
+        .notif-badge { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 2px solid var(--surface); }
+        .notif-dropdown { position: absolute; left: 0; top: 44px; width: 310px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); z-index: 9000; display: none; overflow: hidden; border: 1px solid var(--border); }
+        .notif-dropdown.show { display: block; animation: fadeDown 0.18s ease; }
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .notif-item { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.82rem; cursor: pointer; transition: background 0.15s; color: var(--text); }
+        .notif-item:hover { background: var(--surface-2); }
+        .notif-item.unread { background: var(--blue-light); border-left: 3px solid var(--blue); }
+        .notif-time { font-size: 0.68rem; color: var(--text-faint); margin-top: 3px; }
 
-        .toast-container-custom { position: fixed; bottom: 30px; right: 20px; z-index: 9999; }
-        .toast-notif {
-            background: white; border-radius: 14px; padding: 14px 18px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12); margin-top: 10px;
-            display: flex; align-items: flex-start; gap: 12px;
-            animation: slideIn 0.3s ease; max-width: 300px;
-            border-left: 4px solid #3b82f6;
-        }
+        /* TOAST */
+        .toast-container-custom { position: fixed; bottom: 24px; right: 16px; z-index: 9999; }
+        .toast-notif { background: var(--surface); border-radius: var(--radius-sm); padding: 13px 16px; box-shadow: var(--shadow-lg); margin-top: 8px; display: flex; align-items: flex-start; gap: 12px; animation: slideIn 0.25s ease; max-width: 290px; border: 1px solid var(--border); border-left: 4px solid var(--blue); }
         .toast-notif.task { border-left-color: #8b5cf6; }
-        .toast-notif.chat { border-left-color: #0084ff; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast-notif.chat { border-left-color: var(--accent); }
+        @keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* File Thumbnail */
-        .attachment-wrap { display: inline-flex; flex-direction: column; align-items: center; cursor: pointer; margin-bottom: 12px; margin-right: 8px; }
-        .attachment-thumb { width: 80px; height: 80px; border-radius: 12px; border: 2px solid #e5e7eb; object-fit: cover; transition: border-color 0.2s; }
-        .attachment-wrap:hover .attachment-thumb, .attachment-wrap:hover .attachment-icon-box { border-color: #3b82f6; }
-        .attachment-icon-box { width: 80px; height: 80px; border-radius: 12px; border: 2px solid #e5e7eb; background: #f8fafc; display: flex; align-items: center; justify-content: center; font-size: 2rem; transition: border-color 0.2s; }
-        .attachment-wrap:hover .attachment-icon-box { background: #eff6ff; }
-        .attachment-label { font-size: 0.65rem; color: #6b7280; margin-top: 4px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+        /* FILE THUMBNAILS */
+        .attachment-wrap { display: inline-flex; flex-direction: column; align-items: center; cursor: pointer; margin-bottom: 10px; margin-right: 8px; }
+        .attachment-thumb { width: 72px; height: 72px; border-radius: var(--radius-sm); border: 2px solid var(--border); object-fit: cover; transition: border-color 0.2s; }
+        .attachment-wrap:hover .attachment-thumb, .attachment-wrap:hover .attachment-icon-box { border-color: var(--blue); }
+        .attachment-icon-box { width: 72px; height: 72px; border-radius: var(--radius-sm); border: 2px solid var(--border); background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; transition: border-color 0.2s, background 0.2s; }
+        .attachment-wrap:hover .attachment-icon-box { background: var(--blue-light); }
+        .attachment-label { font-size: 0.62rem; color: var(--text-muted); margin-top: 4px; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
 
-        /* Lightbox */
-        #lightboxOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 99999; flex-direction: column; align-items: center; justify-content: center; }
-        #lightboxOverlay.show { display: flex; }
-        #lightboxClose { position: absolute; top: 18px; right: 24px; color: white; font-size: 2.4rem; cursor: pointer; line-height: 1; }
-        #lightboxImg { max-width: 88vw; max-height: 70vh; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-        #lightboxIconBig { font-size: 6rem; }
-        #lightboxName { color: #d1d5db; font-size: 0.82rem; margin-top: 10px; text-align: center; max-width: 80vw; word-break: break-all; }
-        .lightbox-actions { display: flex; gap: 12px; margin-top: 16px; }
-        .lb-btn { color: white; border: none; border-radius: 20px; padding: 9px 24px; font-weight: 600; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 7px; }
-        #lbViewBtn { background: #3b82f6; }
-        #lbDlBtn { background: #10b981; }
+        /* LIGHTBOX */
+        #lightboxOverlay { display: none; position: fixed; inset: 0; background: rgba(10,10,20,0.92); z-index: 99999; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+        #lightboxOverlay.show { display: flex; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        #lightboxClose { position: absolute; top: 20px; right: 24px; color: rgba(255,255,255,0.8); font-size: 2rem; cursor: pointer; line-height: 1; transition: color 0.15s; }
+        #lightboxClose:hover { color: white; }
+        #lightboxImg { max-width: 88vw; max-height: 68vh; border-radius: var(--radius-sm); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        #lightboxIconBig { font-size: 5rem; }
+        #lightboxName { color: #94a3b8; font-size: 0.8rem; margin-top: 12px; text-align: center; max-width: 80vw; word-break: break-all; }
+        .lightbox-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .lb-btn { color: white; border: none; border-radius: 20px; padding: 9px 22px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: opacity 0.15s, transform 0.15s; font-family: inherit; }
+        .lb-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+        #lbViewBtn { background: var(--blue); }
+        #lbDlBtn { background: var(--success); }
 
+        /* TABLE */
+        .table { font-size: 0.875rem; color: var(--text); }
+        .table thead th { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .table td { vertical-align: middle; padding: 14px 8px; border-color: var(--border); }
+
+        /* FORM CONTROLS */
+        .form-control, .form-select { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem; border-radius: var(--radius-sm) !important; border: 1.5px solid var(--border) !important; background: var(--surface-2) !important; color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; }
+        .form-control:focus, .form-select:focus { border-color: var(--blue) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.12) !important; background: var(--surface) !important; }
+
+        /* BUTTONS */
+        .btn { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; }
+        .btn-dark { background: var(--text); border-color: var(--text); }
+        .btn-dark:hover { background: #1e293b; border-color: #1e293b; }
+
+        /* RESPONSIVE */
+        @media (max-width: 575px) {
+            .main-content { padding: 16px 14px 90px; }
+            .card-custom { padding: 16px; border-radius: var(--radius-sm); }
+            .notif-dropdown { width: calc(100vw - 32px); }
+            .toast-container-custom { right: 10px; left: 10px; }
+            .toast-notif { max-width: 100%; }
+        }
         @media (max-width: 767px) {
             .sidebar { display: none !important; }
             .mobile-nav {
                 display: flex !important; justify-content: space-around; align-items: center;
-                position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
-                background: white; border-top: 1px solid #e5e7eb; z-index: 2000;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+                position: fixed; bottom: 0; left: 0; width: 100%;
+                height: calc(62px + env(safe-area-inset-bottom));
+                background: var(--surface); border-top: 1px solid var(--border);
+                z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+                padding-bottom: env(safe-area-inset-bottom);
             }
-            .mobile-nav a { flex: 1; text-align: center; color: #6b7280; text-decoration: none; font-size: 1.2rem; }
-            .mobile-nav a.active { color: var(--messenger-blue); }
-            .main-content { margin-left: 0 !important; padding: 20px 20px 100px 20px !important; }
+            .mobile-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.62rem; font-weight: 600; color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
+            .mobile-nav a.active { color: var(--blue); }
+            .main-content { margin-left: 0 !important; padding: 20px 16px 90px !important; }
+        }
+        @media (min-width: 768px) and (max-width: 991px) {
+            :root { --sidebar-width: 220px; }
+            .main-content { padding: 24px; }
+            .card-custom { padding: 18px; }
+        }
+        @media (min-width: 992px) and (max-width: 1199px) {
+            :root { --sidebar-width: 240px; }
+            .main-content { padding: 28px; }
+        }
+        @media (min-width: 1400px) {
+            :root { --sidebar-width: 280px; }
+            .main-content { padding: 40px; }
         }
     </style>
 </head>
@@ -138,40 +201,41 @@
 </div>
 
 <aside class="sidebar">
-    <div class="fw-bold fs-5 mb-5 text-primary"><i class="bi bi-shield-lock-fill"></i> Director Panel</div>
+    <div class="sidebar-logo"><i class="bi bi-shield-lock-fill"></i> TaskFlow</div>
     <div class="text-center mb-4">
-        <img id="dirPic" src="https://ui-avatars.com/api/?background=random" class="rounded-circle mb-2 border shadow-sm" style="width:80px;height:80px;">
-        <h6 id="dirNameDisplay" class="fw-bold m-0">---</h6>
+        <img id="dirPic" src="https://ui-avatars.com/api/?background=random" class="sidebar-avatar mb-2">
+        <div id="dirNameDisplay" style="font-size:0.875rem;font-weight:700;color:var(--text);">---</div>
+        <div style="font-size:0.72rem;color:var(--text-faint);margin-top:2px;">Director</div>
     </div>
     <div class="d-flex justify-content-center mb-4">
         <div class="notif-bell" onclick="toggleNotifDropdown()">
-            <i class="bi bi-bell-fill fs-5 text-secondary"></i>
+            <i class="bi bi-bell-fill" style="font-size:1.1rem;color:var(--text-muted);"></i>
             <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
             <div class="notif-dropdown" id="notifDropdown">
                 <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
                     <span class="fw-bold small">Notifications</span>
-                    <span class="text-primary small" style="cursor:pointer;" onclick="markAllRead(event)">Mark all read</span>
+                    <span style="cursor:pointer;font-size:0.78rem;color:var(--blue);font-weight:600;" onclick="markAllRead(event)">Mark all read</span>
                 </div>
-                <div id="notifList" style="max-height:300px; overflow-y:auto;"></div>
+                <div id="notifList" style="max-height:300px;overflow-y:auto;"></div>
             </div>
         </div>
     </div>
-    <nav class="nav flex-column gap-2">
-        <a class="nav-link text-dark fw-bold bg-light rounded-3" href="#"><i class="bi bi-speedometer2 me-2"></i> Monitor</a>
-        <a class="nav-link text-muted" href="#" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive me-2"></i> Archive</a>
-        <a class="nav-link text-danger mt-4" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
+    <nav class="nav flex-column gap-1 flex-grow-1">
+        <a class="nav-link active" href="#"><i class="bi bi-speedometer2"></i> Monitor</a>
+        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive"></i> Archive</a>
     </nav>
+    <a class="nav-link text-danger mt-3" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left"></i> Logout</a>
 </aside>
 
 <div class="mobile-nav">
-    <a href="#" class="active"><i class="bi bi-speedometer2"></i><div style="font-size: 10px;">Monitor</div></a>
-    <a href="#" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive"></i><div style="font-size: 10px;">Archive</div></a>
-    <div class="notif-bell" onclick="toggleNotifDropdown()" style="flex:1; text-align:center; color:#6b7280;">
+    <a href="#" class="active"><i class="bi bi-speedometer2" style="font-size:1.2rem;"></i><span>Monitor</span></a>
+    <a href="#" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive" style="font-size:1.2rem;"></i><span>Archive</span></a>
+    <div class="notif-bell" onclick="toggleNotifDropdown()" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;color:var(--text-faint);">
         <i class="bi bi-bell-fill" style="font-size:1.2rem;"></i>
-        <div style="font-size:10px;">Alerts</div>
+        <span style="font-size:0.62rem;font-weight:600;">Alerts</span>
         <span class="notif-badge" id="notifBadgeMobile" style="display:none;">0</span>
     </div>
-    <a href="javascript:void(0)" onclick="logout()" class="text-danger"><i class="bi bi-box-arrow-left"></i><div style="font-size: 10px;">Logout</div></a>
+    <a href="javascript:void(0)" onclick="logout()" style="color:var(--danger) !important;"><i class="bi bi-box-arrow-left" style="font-size:1.2rem;"></i><span>Logout</span></a>
 </div>
 
 <main class="main-content">
