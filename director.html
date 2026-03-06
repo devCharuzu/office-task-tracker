@@ -27,12 +27,21 @@
         .bg-received { background: #eff6ff; color: #1d4ed8; }
         .bg-completed { background: #f0fdf4; color: #15803d; }
 
-        .chat-modal-body { height: 500px; display: flex; flex-direction: column; background: #fff; }
-        .chat-container { flex-grow: 1; overflow-y: auto; padding: 20px; background: var(--messenger-bg); display: flex; flex-direction: column; justify-content: flex-end; }
-        .chat-messages { display: flex; flex-direction: column; }
-        .msg-bubble { padding: 10px 16px; border-radius: 18px; font-size: 0.9rem; max-width: 85%; margin-bottom: 10px; }
+        /* CHAT - fixed scroll */
+        .chat-modal-body { height: 500px; display: flex; flex-direction: column; overflow: hidden; }
+        .chat-container {
+            flex: 1 1 0;
+            overflow-y: auto;
+            padding: 16px;
+            background: var(--messenger-bg);
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-spacer { flex: 1 1 auto; }
+        .msg-bubble { padding: 10px 16px; border-radius: 18px; font-size: 0.9rem; max-width: 85%; margin-bottom: 8px; word-break: break-word; flex-shrink: 0; }
         .own { align-self: flex-end; background: var(--messenger-blue); color: white; border-bottom-right-radius: 4px; }
         .theirs { align-self: flex-start; background: white; color: black; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .chat-input-bar { flex-shrink: 0; padding: 12px 16px; background: white; border-top: 1px solid #e5e7eb; }
         .spinner-btn { width: 1rem; height: 1rem; border-width: 0.15em; }
 
         .notif-bell { position: relative; cursor: pointer; }
@@ -246,8 +255,7 @@
         globalData = { users: [], tasks: [], comments: [], notifications: [] },
         activeTaskId = null,
         lastDataHash = "",
-        lastNotifCount = 0,
-        // FIX: track previous task statuses to detect changes and fire alerts
+        lastNotifCount = -1,  // FIX: start at -1 so first sync doesn't fire toasts
         prevTaskStatuses = {};
 
     if (!session || session.Role !== "Director") window.location.href = "index.html";
@@ -285,8 +293,8 @@
             badgeMobile.style.display = 'none';
         }
 
-        // FIX: show toast for new unread notifications
-        if (lastNotifCount > 0 && unread.length > lastNotifCount) {
+        // FIX: only toast after first sync baseline is set
+        if (lastNotifCount >= 0 && unread.length > lastNotifCount) {
             const newest = unread[0];
             showToast(newest.Message, newest.Type || 'task');
         }
@@ -302,10 +310,8 @@
                 </div>`).join('');
     }
 
-    // FIX: detect task status changes and fire director alert toasts
     function detectTaskStatusChanges(newTasks) {
         if (Object.keys(prevTaskStatuses).length === 0) {
-            // First load — just record statuses, don't fire toasts
             newTasks.forEach(t => { prevTaskStatuses[t.TaskID] = t.Status; });
             return;
         }
@@ -360,7 +366,6 @@
                     return `<option value="${u.ID}">${emoji} ${u.Name} - [${status}]</option>`;
                 }).join('');
 
-            // FIX: detect status changes before rendering
             detectTaskStatusChanges(newData.tasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE"));
 
             renderTasks(globalData.tasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE"), 'taskTableBody');
@@ -379,6 +384,7 @@
             const priorityHtml = t.Priority ? `<span class="badge bg-${priorityColor} bg-opacity-10 text-${priorityColor} border border-${priorityColor} ms-1" style="font-size:0.6rem;">${t.Priority}</span>` : '';
             const categoryHtml = t.Category ? `<span class="badge bg-light text-dark border ms-1" style="font-size:0.6rem;">${t.Category}</span>` : '';
             const fileIcon = t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="text-primary ms-2"><i class="bi bi-paperclip"></i></a>` : '';
+            const safeTitle = t.Title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             return `
             <tr class="border-bottom">
                 <td class="py-3">
@@ -392,7 +398,7 @@
                         <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
                             <li><a class="dropdown-item small" href="javascript:void(0)" onclick="openEditModal('${t.TaskID}')"><i class="bi bi-pencil me-2"></i> Edit Task</a></li>
-                            <li><a class="dropdown-item small text-primary" href="javascript:void(0)" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots me-2"></i> Chat</a></li>
+                            <li><a class="dropdown-item small text-primary" href="javascript:void(0)" onclick="openChat('${t.TaskID}', '${safeTitle}')"><i class="bi bi-chat-dots me-2"></i> Chat</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item small" href="javascript:void(0)" onclick="toggleArch('${t.TaskID}', ${!isArch})">
                                 <i class="bi bi-${isArch ? 'arrow-up' : 'archive'} me-2"></i> ${isArch ? 'Restore' : 'Archive'}
@@ -484,27 +490,39 @@
         new bootstrap.Modal(document.getElementById('chatModal')).show();
     }
 
-    // FIX: messages now stack from top to bottom (oldest first, newest last at bottom)
+    function scrollToBottom() {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            const s = document.getElementById('chatScroll');
+            if (s) s.scrollTop = s.scrollHeight;
+        }));
+    }
+
     function renderComments() {
         const container = document.getElementById('chatBody');
         const comments = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
+
+        const bubbles = comments.length
+            ? comments.map(c =>
+                `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`
+              ).join('')
+            : '<div class="text-center text-muted small py-3" style="align-self:center;">Start the conversation...</div>';
+
         container.innerHTML = `
             <div class="chat-container" id="chatScroll">
-                <div class="chat-messages">
-                    ${comments.length
-                        ? comments.map(c => `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`).join('')
-                        : '<div class="text-center text-muted small py-4">Start the conversation...</div>'
-                    }
-                </div>
+                <div class="chat-spacer"></div>
+                ${bubbles}
             </div>
-            <div class="p-3 bg-white border-top">
+            <div class="chat-input-bar">
                 <div class="input-group">
-                    <input type="text" id="chatInp" class="form-control border-0 bg-light rounded-pill px-3" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg()">
-                    <button id="sendBtn" class="btn btn-primary rounded-circle ms-2" onclick="sendMsg()"><i class="bi bi-send-fill"></i></button>
+                    <input type="text" id="chatInp" class="form-control border-0 bg-light rounded-pill px-3"
+                        placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg()">
+                    <button id="sendBtn" class="btn btn-primary rounded-circle ms-2" onclick="sendMsg()">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
                 </div>
             </div>`;
-        const s = document.getElementById('chatScroll');
-        if (s) s.scrollTop = s.scrollHeight;
+
+        scrollToBottom();
     }
 
     async function sendMsg() {
@@ -515,6 +533,7 @@
         await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value }) });
         await refresh();
         inp.value = ""; btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>';
+        inp.focus();
     }
 
     async function toggleArch(taskId, val) {
