@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbwLGja8-IDIYIBEENNZNw2FhGQnKEt3vGaRjX1ndB34LFVfnkNkcebUg9HaI0k4Di4/exec";
+const API_URL = "https://taskflow-api.[yourname].workers.dev";
 
 let AppData = { 
     tasks: [], 
