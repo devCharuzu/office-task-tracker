@@ -137,34 +137,58 @@
         }
 
         function renderTasks(myTasks) {
-            const feed = document.getElementById('taskFeed');
-            const activeTasks = myTasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE");
-            
-            if (activeTasks.length === 0) {
-                feed.innerHTML = '<div class="text-center py-5 text-muted">No active tasks.</div>';
-                return;
-            }
+    const feed = document.getElementById('taskFeed');
+    const activeTasks = myTasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE");
 
-            feed.innerHTML = activeTasks.reverse().map(t => `
-                <div class="col-12">
-                    <div class="task-card">
-                        <div class="d-flex justify-content-between mb-3">
-                            <span class="status-pill status-${t.Status.toLowerCase()}">${t.Status}</span>
-                            <small class="text-muted">#${t.TaskID}</small>
-                        </div>
-                        <h5 class="fw-bold">${t.Title}</h5>
-                        <p class="text-muted small">${t.Instructions}</p>
-                        ${t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill mb-3 w-100">View Briefing</a>` : ''}
-                        
-                        <div class="d-flex gap-2">
-                            ${t.Status === 'Assigned' ? `<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}', 'Received')" class="btn btn-primary w-100 rounded-pill fw-bold">Accept</button>` : ''}
-                            ${t.Status === 'Received' ? `<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}', 'Completed')" class="btn btn-success w-100 rounded-pill fw-bold">Complete</button>` : ''}
-                            ${t.Status === 'Completed' ? `<button class="btn btn-light w-100 rounded-pill fw-bold" disabled>Finished</button>` : ''}
-                            <button onclick="openChat('${t.TaskID}', '${t.Title}')" class="btn btn-dark rounded-pill px-3"><i class="bi bi-chat-text-fill"></i></button>
-                        </div>
-                    </div>
-                </div>`).join('');
-        }
+    if (activeTasks.length === 0) {
+        feed.innerHTML = '<div class="text-center py-5 text-muted">No active tasks.</div>';
+        return;
+    }
+
+    const priorityBadge = {
+        'Urgent': 'danger',
+        'High': 'warning',
+        'Medium': 'info',
+        'Low': 'secondary',
+        'Normal': 'success'
+    };
+
+    feed.innerHTML = activeTasks.reverse().map(t => {
+        const deadlineHtml = t.Deadline ? `
+            <div class="d-flex align-items-center gap-1 mb-2">
+                <i class="bi bi-clock text-danger" style="font-size:0.8rem;"></i>
+                <small class="text-danger fw-bold">Due: ${new Date(t.Deadline).toLocaleString()}</small>
+            </div>` : '';
+
+        const priorityColor = priorityBadge[t.Priority] || 'success';
+        const categoryHtml = t.Category ? `<span class="badge bg-light text-dark border me-1"><i class="bi bi-tag me-1"></i>${t.Category}</span>` : '';
+        const priorityHtml = t.Priority ? `<span class="badge bg-${priorityColor} bg-opacity-10 text-${priorityColor} border border-${priorityColor}"><i class="bi bi-flag me-1"></i>${t.Priority}</span>` : '';
+
+        return `
+        <div class="col-12">
+            <div class="task-card">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="status-pill status-${t.Status.toLowerCase()}">${t.Status}</span>
+                    <small class="text-muted">#${t.TaskID}</small>
+                </div>
+                <div class="d-flex gap-1 flex-wrap mb-2">
+                    ${categoryHtml}
+                    ${priorityHtml}
+                </div>
+                <h5 class="fw-bold">${t.Title}</h5>
+                <p class="text-muted small">${t.Instructions}</p>
+                ${deadlineHtml}
+                ${t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill mb-3 w-100">View Briefing</a>` : ''}
+                <div class="d-flex gap-2">
+                    ${t.Status === 'Assigned' ? `<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}', 'Received')" class="btn btn-primary w-100 rounded-pill fw-bold">Accept</button>` : ''}
+                    ${t.Status === 'Received' ? `<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}', 'Completed')" class="btn btn-success w-100 rounded-pill fw-bold">Complete</button>` : ''}
+                    ${t.Status === 'Completed' ? `<button class="btn btn-light w-100 rounded-pill fw-bold" disabled>Finished</button>` : ''}
+                    <button onclick="openChat('${t.TaskID}', '${t.Title}')" class="btn btn-dark rounded-pill px-3"><i class="bi bi-chat-text-fill"></i></button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
 
         async function updateTaskStatus(taskId, status) {
             const btn = document.getElementById(`btn-${taskId}`);
