@@ -28,20 +28,19 @@
         .bg-completed { background: #f0fdf4; color: #15803d; }
 
         .chat-modal-body { height: 500px; display: flex; flex-direction: column; background: #fff; }
-        .chat-container { flex-grow: 1; overflow-y: auto; padding: 20px; background: var(--messenger-bg); display: flex; flex-direction: column; }
+        .chat-container { flex-grow: 1; overflow-y: auto; padding: 20px; background: var(--messenger-bg); display: flex; flex-direction: column; justify-content: flex-end; }
+        .chat-messages { display: flex; flex-direction: column; }
         .msg-bubble { padding: 10px 16px; border-radius: 18px; font-size: 0.9rem; max-width: 85%; margin-bottom: 10px; }
         .own { align-self: flex-end; background: var(--messenger-blue); color: white; border-bottom-right-radius: 4px; }
         .theirs { align-self: flex-start; background: white; color: black; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .spinner-btn { width: 1rem; height: 1rem; border-width: 0.15em; }
 
-        /* Notification Bell */
         .notif-bell { position: relative; cursor: pointer; }
         .notif-badge {
             position: absolute; top: -5px; right: -5px;
             background: #ef4444; color: white; border-radius: 50%;
             width: 18px; height: 18px; font-size: 0.6rem;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 700;
+            display: flex; align-items: center; justify-content: center; font-weight: 700;
         }
         .notif-dropdown {
             position: absolute; left: 0; top: 40px;
@@ -55,7 +54,6 @@
         .notif-item.unread { background: #eff6ff; border-left: 3px solid #3b82f6; }
         .notif-time { font-size: 0.7rem; color: #9ca3af; margin-top: 2px; }
 
-        /* Toast */
         .toast-container-custom { position: fixed; bottom: 30px; right: 20px; z-index: 9999; }
         .toast-notif {
             background: white; border-radius: 14px; padding: 14px 18px;
@@ -71,9 +69,7 @@
         @media (max-width: 767px) {
             .sidebar { display: none !important; }
             .mobile-nav {
-                display: flex !important;
-                justify-content: space-around;
-                align-items: center;
+                display: flex !important; justify-content: space-around; align-items: center;
                 position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
                 background: white; border-top: 1px solid #e5e7eb; z-index: 2000;
                 box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
@@ -86,453 +82,457 @@
 </head>
 <body>
 
-    <div id="globalLoader">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-        <p class="mt-3 fw-bold text-primary">Syncing...</p>
+<div id="globalLoader">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+    <p class="mt-3 fw-bold text-primary">Syncing...</p>
+</div>
+
+<div class="toast-container-custom" id="toastContainer"></div>
+
+<aside class="sidebar">
+    <div class="fw-bold fs-5 mb-5 text-primary"><i class="bi bi-shield-lock-fill"></i> Director Panel</div>
+    <div class="text-center mb-4">
+        <img id="dirPic" src="https://ui-avatars.com/api/?background=random" class="rounded-circle mb-2 border shadow-sm" style="width:80px;height:80px;">
+        <h6 id="dirNameDisplay" class="fw-bold m-0">---</h6>
     </div>
-
-    <!-- Toast Container -->
-    <div class="toast-container-custom" id="toastContainer"></div>
-
-    <aside class="sidebar">
-        <div class="fw-bold fs-5 mb-5 text-primary"><i class="bi bi-shield-lock-fill"></i> Director Panel</div>
-        <div class="text-center mb-4">
-            <img id="dirPic" src="https://ui-avatars.com/api/?background=random" class="rounded-circle mb-2 border shadow-sm" style="width:80px;height:80px;">
-            <h6 id="dirNameDisplay" class="fw-bold m-0">---</h6>
+    <div class="d-flex justify-content-center mb-4">
+        <div class="notif-bell" onclick="toggleNotifDropdown()">
+            <i class="bi bi-bell-fill fs-5 text-secondary"></i>
+            <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            <div class="notif-dropdown" id="notifDropdown">
+                <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+                    <span class="fw-bold small">Notifications</span>
+                    <span class="text-primary small" style="cursor:pointer;" onclick="markAllRead(event)">Mark all read</span>
+                </div>
+                <div id="notifList" style="max-height:300px; overflow-y:auto;"></div>
+            </div>
         </div>
+    </div>
+    <nav class="nav flex-column gap-2">
+        <a class="nav-link text-dark fw-bold bg-light rounded-3" href="#"><i class="bi bi-speedometer2 me-2"></i> Monitor</a>
+        <a class="nav-link text-muted" href="#" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive me-2"></i> Archive</a>
+        <a class="nav-link text-danger mt-4" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
+    </nav>
+</aside>
 
-        <!-- Notification Bell in Sidebar -->
-        <div class="d-flex justify-content-center mb-4">
-            <div class="notif-bell" onclick="toggleNotifDropdown()">
-                <i class="bi bi-bell-fill fs-5 text-secondary"></i>
-                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
-                <div class="notif-dropdown" id="notifDropdown">
-                    <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
-                        <span class="fw-bold small">Notifications</span>
-                        <span class="text-primary small" style="cursor:pointer;" onclick="markAllRead(event)">Mark all read</span>
-                    </div>
-                    <div id="notifList" style="max-height:300px; overflow-y:auto;"></div>
+<div class="mobile-nav">
+    <a href="#" class="active"><i class="bi bi-speedometer2"></i><div style="font-size: 10px;">Monitor</div></a>
+    <a href="#" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive"></i><div style="font-size: 10px;">Archive</div></a>
+    <div class="notif-bell" onclick="toggleNotifDropdown()" style="flex:1; text-align:center; color:#6b7280;">
+        <i class="bi bi-bell-fill" style="font-size:1.2rem;"></i>
+        <div style="font-size:10px;">Alerts</div>
+        <span class="notif-badge" id="notifBadgeMobile" style="display:none;">0</span>
+    </div>
+    <a href="javascript:void(0)" onclick="logout()" class="text-danger"><i class="bi bi-box-arrow-left"></i><div style="font-size: 10px;">Logout</div></a>
+</div>
+
+<main class="main-content">
+    <div class="row g-4">
+        <div class="col-xl-4 col-lg-5">
+            <div class="card card-custom border-top border-primary border-4 shadow-sm">
+                <h6 class="fw-bold mb-4">Create Assignment</h6>
+                <label class="small fw-bold text-muted mb-1">Select Employee</label>
+                <select id="empSelect" class="form-select mb-3 bg-light border-0 py-2"></select>
+                <input type="text" id="taskTitle" class="form-control mb-3 bg-light border-0" placeholder="Task Title">
+                <textarea id="taskInstructions" class="form-control mb-3 bg-light border-0" rows="3" placeholder="Instructions..."></textarea>
+                <label class="small fw-bold text-muted mb-1">Category</label>
+                <select id="taskCategory" class="form-select mb-3 bg-light border-0">
+                    <option value="General">General</option>
+                    <option value="Report">Report</option>
+                    <option value="Document">Document</option>
+                    <option value="Project">Project</option>
+                    <option value="Meeting">Meeting</option>
+                    <option value="Others">Others</option>
+                </select>
+                <label class="small fw-bold text-muted mb-1">Priority</label>
+                <select id="taskPriority" class="form-select mb-3 bg-light border-0">
+                    <option value="Normal">🟢 Normal</option>
+                    <option value="Low">⚪ Low</option>
+                    <option value="Medium">🟡 Medium</option>
+                    <option value="High">🟠 High</option>
+                    <option value="Urgent">🔴 Urgent</option>
+                </select>
+                <label class="small fw-bold text-muted mb-1">Deadline</label>
+                <input type="datetime-local" id="taskDeadline" class="form-control mb-4 bg-light border-0">
+                <label class="small fw-bold text-muted mb-1">Attachment (Optional)</label>
+                <input type="file" id="taskFile" class="form-control mb-4 bg-light border-0 small">
+                <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold shadow-sm">Dispatch Task</button>
+            </div>
+        </div>
+        <div class="col-xl-8 col-lg-7">
+            <div class="card card-custom shadow-sm">
+                <h6 class="fw-bold mb-4">Active Task Monitor</h6>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr class="text-muted small">
+                                <th>Employee & Task</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskTableBody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
-
-        <nav class="nav flex-column gap-2">
-            <a class="nav-link text-dark fw-bold bg-light rounded-3" href="#"><i class="bi bi-speedometer2 me-2"></i> Monitor</a>
-            <a class="nav-link text-muted" href="#" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive me-2"></i> Archive</a>
-            <a class="nav-link text-danger mt-4" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
-        </nav>
-    </aside>
-
-    <div class="mobile-nav">
-        <a href="#" class="active"><i class="bi bi-speedometer2"></i><div style="font-size: 10px;">Monitor</div></a>
-        <a href="#" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive"></i><div style="font-size: 10px;">Archive</div></a>
-        <div class="notif-bell" onclick="toggleNotifDropdown()" style="flex:1; text-align:center; color:#6b7280;">
-            <i class="bi bi-bell-fill" style="font-size:1.2rem;"></i>
-            <div style="font-size:10px;">Alerts</div>
-            <span class="notif-badge" id="notifBadgeMobile" style="display:none;">0</span>
-        </div>
-        <a href="javascript:void(0)" onclick="logout()" class="text-danger"><i class="bi bi-box-arrow-left"></i><div style="font-size: 10px;">Logout</div></a>
     </div>
+</main>
 
-    <main class="main-content">
-        <div class="row g-4">
-            <div class="col-xl-4 col-lg-5">
-                <div class="card card-custom border-top border-primary border-4 shadow-sm">
-                    <h6 class="fw-bold mb-4">Create Assignment</h6>
-                    <label class="small fw-bold text-muted mb-1">Select Employee</label>
-                    <select id="empSelect" class="form-select mb-3 bg-light border-0 py-2"></select>
-                    <input type="text" id="taskTitle" class="form-control mb-3 bg-light border-0" placeholder="Task Title">
-                    <textarea id="taskInstructions" class="form-control mb-3 bg-light border-0" rows="3" placeholder="Instructions..."></textarea>
-                    <label class="small fw-bold text-muted mb-1">Category</label>
-                    <select id="taskCategory" class="form-select mb-3 bg-light border-0">
-                        <option value="General">General</option>
-                        <option value="Report">Report</option>
-                        <option value="Document">Document</option>
-                        <option value="Project">Project</option>
-                        <option value="Meeting">Meeting</option>
-                        <option value="Others">Others</option>
+<!-- Archive Modal -->
+<div class="modal fade" id="archiveModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4">
+            <div class="modal-header border-0 px-4 pt-4"><h5>Archive Repository</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body px-4 pb-4"><div class="table-responsive"><table class="table"><tbody id="archiveTableBody"></tbody></table></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4">
+            <div class="modal-header border-0 shadow-sm px-4 py-3">
+                <h6 class="fw-bold m-0">Edit Assignment</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="editTaskId">
+                <div class="mb-3"><label class="small fw-bold text-muted">Title</label><input type="text" id="editTitle" class="form-control bg-light border-0"></div>
+                <div class="mb-3"><label class="small fw-bold text-muted">Instructions</label><textarea id="editInstructions" class="form-control bg-light border-0" rows="4"></textarea></div>
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted">Category</label>
+                    <select id="editCategory" class="form-select bg-light border-0">
+                        <option value="General">General</option><option value="Report">Report</option>
+                        <option value="Document">Document</option><option value="Project">Project</option>
+                        <option value="Meeting">Meeting</option><option value="Others">Others</option>
                     </select>
-                    <label class="small fw-bold text-muted mb-1">Priority</label>
-                    <select id="taskPriority" class="form-select mb-3 bg-light border-0">
-                        <option value="Normal">🟢 Normal</option>
-                        <option value="Low">⚪ Low</option>
-                        <option value="Medium">🟡 Medium</option>
-                        <option value="High">🟠 High</option>
+                </div>
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted">Priority</label>
+                    <select id="editPriority" class="form-select bg-light border-0">
+                        <option value="Normal">🟢 Normal</option><option value="Low">⚪ Low</option>
+                        <option value="Medium">🟡 Medium</option><option value="High">🟠 High</option>
                         <option value="Urgent">🔴 Urgent</option>
                     </select>
-                    <label class="small fw-bold text-muted mb-1">Deadline</label>
-                    <input type="datetime-local" id="taskDeadline" class="form-control mb-4 bg-light border-0">
-                    <label class="small fw-bold text-muted mb-1">Attachment (Optional)</label>
-                    <input type="file" id="taskFile" class="form-control mb-4 bg-light border-0 small">
-                    <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold shadow-sm">Dispatch Task</button>
                 </div>
-            </div>
-
-            <div class="col-xl-8 col-lg-7">
-                <div class="card card-custom shadow-sm">
-                    <h6 class="fw-bold mb-4">Active Task Monitor</h6>
-                    <div class="table-responsive">
-                        <table class="table align-middle">
-                            <thead>
-                                <tr class="text-muted small">
-                                    <th>Employee & Task</th>
-                                    <th>Status</th>
-                                    <th class="text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="taskTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Archive Modal -->
-    <div class="modal fade" id="archiveModal" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content border-0 rounded-4">
-                <div class="modal-header border-0 px-4 pt-4"><h5>Archive Repository</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body px-4 pb-4"><div class="table-responsive"><table class="table"><tbody id="archiveTableBody"></tbody></table></div></div>
+                <div class="mb-3"><label class="small fw-bold text-muted">Deadline</label><input type="datetime-local" id="editDeadline" class="form-control bg-light border-0"></div>
+                <div class="mb-3"><label class="small fw-bold text-muted">Replace File (Optional)</label><input type="file" id="editTaskFile" class="form-control bg-light border-0 small"></div>
+                <button onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Task</button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Edit Modal -->
-    <div class="modal fade" id="editModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 rounded-4">
-                <div class="modal-header border-0 shadow-sm px-4 py-3">
-                    <h6 class="fw-bold m-0">Edit Assignment</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <input type="hidden" id="editTaskId">
-                    <div class="mb-3">
-                        <label class="small fw-bold text-muted">Title</label>
-                        <input type="text" id="editTitle" class="form-control bg-light border-0">
-                    </div>
-                    <div class="mb-3">
-                        <label class="small fw-bold text-muted">Instructions</label>
-                        <textarea id="editInstructions" class="form-control bg-light border-0" rows="4"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="small fw-bold text-muted">Category</label>
-                        <select id="editCategory" class="form-select bg-light border-0">
-                            <option value="General">General</option>
-                            <option value="Report">Report</option>
-                            <option value="Document">Document</option>
-                            <option value="Project">Project</option>
-                            <option value="Meeting">Meeting</option>
-                            <option value="Others">Others</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="small fw-bold text-muted">Priority</label>
-                        <select id="editPriority" class="form-select bg-light border-0">
-                            <option value="Normal">🟢 Normal</option>
-                            <option value="Low">⚪ Low</option>
-                            <option value="Medium">🟡 Medium</option>
-                            <option value="High">🟠 High</option>
-                            <option value="Urgent">🔴 Urgent</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="small fw-bold text-muted">Deadline</label>
-                        <input type="datetime-local" id="editDeadline" class="form-control bg-light border-0">
-                    </div>
-                    <div class="mb-3">
-                        <label class="small fw-bold text-muted">Replace File (Optional)</label>
-                        <input type="file" id="editTaskFile" class="form-control bg-light border-0 small">
-                    </div>
-                    <button onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Task</button>
-                </div>
+<!-- Chat Modal -->
+<div class="modal fade" id="chatModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 overflow-hidden">
+            <div class="modal-header border-0 shadow-sm px-4 py-3">
+                <h6 class="fw-bold m-0" id="chatTaskTitle">Chat</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="activeTaskId=null"></button>
             </div>
+            <div class="modal-body chat-modal-body p-0" id="chatBody"></div>
         </div>
     </div>
+</div>
 
-    <!-- Chat Modal -->
-    <div class="modal fade" id="chatModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 rounded-4 overflow-hidden">
-                <div class="modal-header border-0 shadow-sm px-4 py-3">
-                    <h6 class="fw-bold m-0" id="chatTaskTitle">Chat</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="activeTaskId=null"></button>
-                </div>
-                <div class="modal-body chat-modal-body p-0" id="chatBody"></div>
-            </div>
-        </div>
-    </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_URL = "https://taskflow-api.jcpanganiban1.workers.dev";
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const API_URL = "https://taskflow-api.jcpanganiban1.workers.dev";
+    let session = JSON.parse(localStorage.getItem('office_session')),
+        globalData = { users: [], tasks: [], comments: [], notifications: [] },
+        activeTaskId = null,
+        lastDataHash = "",
+        lastNotifCount = 0,
+        // FIX: track previous task statuses to detect changes and fire alerts
+        prevTaskStatuses = {};
 
-        let session = JSON.parse(localStorage.getItem('office_session')),
-            globalData = { users: [], tasks: [], comments: [], notifications: [] },
-            activeTaskId = null,
-            lastDataHash = "",
-            lastNotifCount = 0;
+    if (!session || session.Role !== "Director") window.location.href = "index.html";
 
-        if (!session || session.Role !== "Director") window.location.href = "index.html";
+    function showLoader(show) {
+        document.getElementById('globalLoader').style.display = show ? 'flex' : 'none';
+    }
 
-        function showLoader(show) {
-            document.getElementById('globalLoader').style.display = show ? 'flex' : 'none';
+    function logout() { localStorage.clear(); window.location.href = "index.html"; }
+
+    // --- NOTIFICATIONS ---
+    function toggleNotifDropdown() {
+        document.getElementById('notifDropdown').classList.toggle('show');
+    }
+
+    document.addEventListener('click', function(e) {
+        const bell = document.querySelector('.notif-bell');
+        if (bell && !bell.contains(e.target)) {
+            const dd = document.getElementById('notifDropdown');
+            if (dd) dd.classList.remove('show');
+        }
+    });
+
+    function renderNotifications(notifications) {
+        const unread = notifications.filter(n => n.IsRead === 'FALSE');
+        const badge = document.getElementById('notifBadge');
+        const badgeMobile = document.getElementById('notifBadgeMobile');
+        const label = unread.length > 9 ? '9+' : unread.length;
+
+        if (unread.length > 0) {
+            badge.style.display = 'flex'; badge.innerText = label;
+            badgeMobile.style.display = 'flex'; badgeMobile.innerText = label;
+        } else {
+            badge.style.display = 'none';
+            badgeMobile.style.display = 'none';
         }
 
-        function logout() {
-            localStorage.clear();
-            window.location.href = "index.html";
+        // FIX: show toast for new unread notifications
+        if (lastNotifCount > 0 && unread.length > lastNotifCount) {
+            const newest = unread[0];
+            showToast(newest.Message, newest.Type || 'task');
         }
+        lastNotifCount = unread.length;
 
-        // --- NOTIFICATIONS ---
-        function toggleNotifDropdown() {
-            document.getElementById('notifDropdown').classList.toggle('show');
+        const list = document.getElementById('notifList');
+        list.innerHTML = notifications.length === 0
+            ? '<div class="text-center text-muted small py-4">No notifications yet</div>'
+            : notifications.map(n => `
+                <div class="notif-item ${n.IsRead === 'FALSE' ? 'unread' : ''}">
+                    <div>${n.Message}</div>
+                    <div class="notif-time">${new Date(n.CreatedAt).toLocaleString()}</div>
+                </div>`).join('');
+    }
+
+    // FIX: detect task status changes and fire director alert toasts
+    function detectTaskStatusChanges(newTasks) {
+        if (Object.keys(prevTaskStatuses).length === 0) {
+            // First load — just record statuses, don't fire toasts
+            newTasks.forEach(t => { prevTaskStatuses[t.TaskID] = t.Status; });
+            return;
         }
-
-        document.addEventListener('click', function(e) {
-            const bell = document.querySelector('.notif-bell');
-            if (bell && !bell.contains(e.target)) {
-                const dd = document.getElementById('notifDropdown');
-                if (dd) dd.classList.remove('show');
+        newTasks.forEach(t => {
+            const prev = prevTaskStatuses[t.TaskID];
+            if (prev && prev !== t.Status) {
+                showToast(`"${t.Title}" was marked ${t.Status} by ${t.EmployeeName}`, 'task');
             }
+            prevTaskStatuses[t.TaskID] = t.Status;
         });
+    }
 
-        function renderNotifications(notifications) {
-            const unread = notifications.filter(n => n.IsRead === 'FALSE');
-            const badge = document.getElementById('notifBadge');
-            const badgeMobile = document.getElementById('notifBadgeMobile');
-            const label = unread.length > 9 ? '9+' : unread.length;
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast-notif ${type}`;
+        toast.innerHTML = `
+            <i class="bi bi-${type === 'chat' ? 'chat-fill text-primary' : 'clipboard-check-fill text-success'} fs-5"></i>
+            <div>
+                <div class="fw-bold" style="font-size:0.8rem;">${type === 'chat' ? 'New Message' : 'Task Update'}</div>
+                <div style="font-size:0.78rem; color:#6b7280;">${message}</div>
+            </div>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
 
-            if (unread.length > 0) {
-                badge.style.display = 'flex'; badge.innerText = label;
-                badgeMobile.style.display = 'flex'; badgeMobile.innerText = label;
-            } else {
-                badge.style.display = 'none';
-                badgeMobile.style.display = 'none';
-            }
+    async function markAllRead(e) {
+        if (e) e.stopPropagation();
+        await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "MARK_NOTIFICATIONS_READ", userId: session.ID })
+        });
+        await refresh();
+        document.getElementById('notifDropdown').classList.remove('show');
+    }
 
-            if (lastNotifCount > 0 && unread.length > lastNotifCount) {
-                showToast(notifications[0].Message, notifications[0].Type);
-            }
-            lastNotifCount = unread.length;
+    // --- REFRESH ---
+    async function refresh(isAuto = false) {
+        try {
+            const res = await fetch(`${API_URL}?userId=${session.ID}`);
+            const newData = await res.json();
+            const newHash = JSON.stringify(newData.tasks) + JSON.stringify(newData.comments) + JSON.stringify(newData.users) + JSON.stringify(newData.notifications);
+            if (newHash === lastDataHash && isAuto) return;
+            globalData = newData;
+            lastDataHash = newHash;
 
-            const list = document.getElementById('notifList');
-            list.innerHTML = notifications.length === 0
-                ? '<div class="text-center text-muted small py-4">No notifications yet</div>'
-                : notifications.map(n => `
-                    <div class="notif-item ${n.IsRead === 'FALSE' ? 'unread' : ''}">
-                        <div>${n.Message}</div>
-                        <div class="notif-time">${new Date(n.CreatedAt).toLocaleString()}</div>
-                    </div>`).join('');
-        }
+            document.getElementById('empSelect').innerHTML = globalData.users
+                .filter(u => u.Role !== 'Director')
+                .map(u => {
+                    const status = u.Status || 'Available';
+                    const emoji = status === 'On Leave' ? '🔴' : (status === 'Official Travel' ? '🔵' : '🟢');
+                    return `<option value="${u.ID}">${emoji} ${u.Name} - [${status}]</option>`;
+                }).join('');
 
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast-notif ${type}`;
-            toast.innerHTML = `
-                <i class="bi bi-${type === 'chat' ? 'chat-fill text-primary' : 'clipboard-check-fill text-success'} fs-5"></i>
-                <div>
-                    <div class="fw-bold" style="font-size:0.8rem;">${type === 'chat' ? 'New Message' : 'New Task'}</div>
-                    <div style="font-size:0.78rem; color:#6b7280;">${message}</div>
-                </div>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
-        }
+            // FIX: detect status changes before rendering
+            detectTaskStatusChanges(newData.tasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE"));
 
-        async function markAllRead(e) {
-            if (e) e.stopPropagation();
-            await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: "MARK_NOTIFICATIONS_READ", userId: session.ID })
-            });
-            await refresh();
-            document.getElementById('notifDropdown').classList.remove('show');
-        }
+            renderTasks(globalData.tasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE"), 'taskTableBody');
+            renderTasks(globalData.tasks.filter(t => String(t.Archived).toUpperCase() === "TRUE"), 'archiveTableBody', true);
+            renderNotifications(newData.notifications || []);
+            if (activeTaskId) renderComments();
+        } catch (e) { console.error("Sync error", e); }
+    }
 
-        // --- REFRESH ---
-        async function refresh(isAuto = false) {
-            try {
-                const res = await fetch(`${API_URL}?userId=${session.ID}`);
-                const newData = await res.json();
-                const newHash = JSON.stringify(newData.tasks) + JSON.stringify(newData.comments) + JSON.stringify(newData.users) + JSON.stringify(newData.notifications);
-                if (newHash === lastDataHash && isAuto) return;
-                globalData = newData;
-                lastDataHash = newHash;
-
-                document.getElementById('empSelect').innerHTML = globalData.users
-                    .filter(u => u.Role !== 'Director')
-                    .map(u => {
-                        const status = u.Status || 'Available';
-                        const emoji = status === 'On Leave' ? '🔴' : (status === 'Official Travel' ? '🔵' : '🟢');
-                        return `<option value="${u.ID}">${emoji} ${u.Name} - [${status}]</option>`;
-                    }).join('');
-
-                renderTasks(globalData.tasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE"), 'taskTableBody');
-                renderTasks(globalData.tasks.filter(t => String(t.Archived).toUpperCase() === "TRUE"), 'archiveTableBody', true);
-                renderNotifications(newData.notifications || []);
-                if (activeTaskId) renderComments();
-            } catch (e) { console.error("Sync error", e); }
-        }
-
-        // --- RENDER TASKS ---
-        function renderTasks(tasks, id, isArch = false) {
-            const priorityBadge = { 'Urgent': 'danger', 'High': 'warning', 'Medium': 'info', 'Low': 'secondary', 'Normal': 'success' };
-            document.getElementById(id).innerHTML = tasks.slice().reverse().map(t => {
-                const priorityColor = priorityBadge[t.Priority] || 'success';
-                const deadlineHtml = t.Deadline ? `<br><small class="text-danger"><i class="bi bi-clock me-1"></i>Due: ${new Date(t.Deadline).toLocaleString()}</small>` : '';
-                const priorityHtml = t.Priority ? `<span class="badge bg-${priorityColor} bg-opacity-10 text-${priorityColor} border border-${priorityColor} ms-1" style="font-size:0.6rem;">${t.Priority}</span>` : '';
-                const categoryHtml = t.Category ? `<span class="badge bg-light text-dark border ms-1" style="font-size:0.6rem;">${t.Category}</span>` : '';
-                const fileIcon = t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="text-primary ms-2"><i class="bi bi-paperclip"></i></a>` : '';
-                return `
-                <tr class="border-bottom">
-                    <td class="py-3">
-                        <b>${t.EmployeeName}</b> ${fileIcon}<br>
-                        <small class="text-muted">${t.Title}</small>
-                        ${categoryHtml}${priorityHtml}${deadlineHtml}
-                    </td>
-                    <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
-                    <td class="text-end">
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                <li><a class="dropdown-item small" href="javascript:void(0)" onclick="openEditModal('${t.TaskID}')"><i class="bi bi-pencil me-2"></i> Edit Task</a></li>
-                                <li><a class="dropdown-item small text-primary" href="javascript:void(0)" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots me-2"></i> Chat</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item small" href="javascript:void(0)" onclick="toggleArch('${t.TaskID}', ${!isArch})">
-                                    <i class="bi bi-${isArch ? 'arrow-up' : 'archive'} me-2"></i> ${isArch ? 'Restore' : 'Archive'}
-                                </a></li>
-                            </ul>
-                        </div>
-                    </td>
-                </tr>`;
-            }).join('') || '<tr><td colspan="3" class="text-center py-4">No data.</td></tr>';
-        }
-
-        // --- EDIT TASK ---
-        function openEditModal(taskId) {
-            const task = globalData.tasks.find(t => String(t.TaskID) === String(taskId));
-            if (!task) return;
-            document.getElementById('editTaskId').value = task.TaskID;
-            document.getElementById('editTitle').value = task.Title;
-            document.getElementById('editInstructions').value = task.Instructions;
-            document.getElementById('editCategory').value = task.Category || 'General';
-            document.getElementById('editPriority').value = task.Priority || 'Normal';
-            document.getElementById('editDeadline').value = task.Deadline ? task.Deadline.slice(0, 16) : '';
-            document.getElementById('editTaskFile').value = "";
-            new bootstrap.Modal(document.getElementById('editModal')).show();
-        }
-
-        async function saveTaskEdit() {
-            const taskId = document.getElementById('editTaskId').value;
-            const fInp = document.getElementById('editTaskFile');
-            showLoader(true);
-            let fData = null, fName = "";
-            if (fInp.files[0]) {
-                fName = fInp.files[0].name;
-                fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
-            }
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify({
-                action: "EDIT_TASK", taskId,
-                title: document.getElementById('editTitle').value,
-                instructions: document.getElementById('editInstructions').value,
-                priority: document.getElementById('editPriority').value,
-                category: document.getElementById('editCategory').value,
-                deadline: document.getElementById('editDeadline').value,
-                fileData: fData, fileName: fName
-            })});
-            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
-            await refresh();
-            showLoader(false);
-        }
-
-        // --- CREATE TASK ---
-        async function createTask() {
-            const empId = document.getElementById('empSelect').value;
-            const selectedEmp = globalData.users.find(u => String(u.ID) === String(empId));
-            const status = selectedEmp ? (selectedEmp.Status || 'Available') : 'Available';
-            if (status !== 'Available') {
-                if (!confirm(`⚠️ ATTENTION: ${selectedEmp.Name} is currently "${status}". Proceed anyway?`)) return;
-            }
-            const btn = document.getElementById('createBtn');
-            const fInp = document.getElementById('taskFile');
-            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
-            showLoader(true);
-            let fData = null, fName = "";
-            if (fInp.files[0]) {
-                fName = fInp.files[0].name;
-                fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
-            }
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify({
-                action: "CREATE_TASK", empId, empName: selectedEmp.Name,
-                title: document.getElementById('taskTitle').value,
-                instructions: document.getElementById('taskInstructions').value,
-                priority: document.getElementById('taskPriority').value,
-                category: document.getElementById('taskCategory').value,
-                deadline: document.getElementById('taskDeadline').value,
-                fileData: fData, fileName: fName
-            })});
-            btn.disabled = false; btn.innerText = 'Dispatch Task';
-            document.getElementById('taskTitle').value = "";
-            document.getElementById('taskInstructions').value = "";
-            document.getElementById('taskDeadline').value = "";
-            fInp.value = "";
-            showLoader(false);
-            refresh();
-        }
-
-        // --- CHAT ---
-        function openChat(taskId, title) {
-            activeTaskId = taskId;
-            document.getElementById('chatTaskTitle').innerText = title;
-            renderComments();
-            new bootstrap.Modal(document.getElementById('chatModal')).show();
-        }
-
-        function renderComments() {
-            const container = document.getElementById('chatBody');
-            const comments = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
-            container.innerHTML = `
-                <div class="chat-container" id="chatScroll">
-                    ${comments.map(c => `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`).join('')}
-                </div>
-                <div class="p-3 bg-white border-top">
-                    <div class="input-group">
-                        <input type="text" id="chatInp" class="form-control border-0 bg-light rounded-pill px-3" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg()">
-                        <button id="sendBtn" class="btn btn-primary rounded-circle ms-2" onclick="sendMsg()"><i class="bi bi-send-fill"></i></button>
+    // --- RENDER TASKS ---
+    function renderTasks(tasks, id, isArch = false) {
+        const priorityBadge = { 'Urgent': 'danger', 'High': 'warning', 'Medium': 'info', 'Low': 'secondary', 'Normal': 'success' };
+        document.getElementById(id).innerHTML = tasks.slice().reverse().map(t => {
+            const priorityColor = priorityBadge[t.Priority] || 'success';
+            const deadlineHtml = t.Deadline ? `<br><small class="text-danger"><i class="bi bi-clock me-1"></i>Due: ${new Date(t.Deadline).toLocaleString()}</small>` : '';
+            const priorityHtml = t.Priority ? `<span class="badge bg-${priorityColor} bg-opacity-10 text-${priorityColor} border border-${priorityColor} ms-1" style="font-size:0.6rem;">${t.Priority}</span>` : '';
+            const categoryHtml = t.Category ? `<span class="badge bg-light text-dark border ms-1" style="font-size:0.6rem;">${t.Category}</span>` : '';
+            const fileIcon = t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="text-primary ms-2"><i class="bi bi-paperclip"></i></a>` : '';
+            return `
+            <tr class="border-bottom">
+                <td class="py-3">
+                    <b>${t.EmployeeName}</b> ${fileIcon}<br>
+                    <small class="text-muted">${t.Title}</small>
+                    ${categoryHtml}${priorityHtml}${deadlineHtml}
+                </td>
+                <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
+                <td class="text-end">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                            <li><a class="dropdown-item small" href="javascript:void(0)" onclick="openEditModal('${t.TaskID}')"><i class="bi bi-pencil me-2"></i> Edit Task</a></li>
+                            <li><a class="dropdown-item small text-primary" href="javascript:void(0)" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots me-2"></i> Chat</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item small" href="javascript:void(0)" onclick="toggleArch('${t.TaskID}', ${!isArch})">
+                                <i class="bi bi-${isArch ? 'arrow-up' : 'archive'} me-2"></i> ${isArch ? 'Restore' : 'Archive'}
+                            </a></li>
+                        </ul>
                     </div>
-                </div>`;
-            const s = document.getElementById('chatScroll');
-            if (s) s.scrollTop = s.scrollHeight;
+                </td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="3" class="text-center py-4">No data.</td></tr>';
+    }
+
+    // --- EDIT TASK ---
+    function openEditModal(taskId) {
+        const task = globalData.tasks.find(t => String(t.TaskID) === String(taskId));
+        if (!task) return;
+        document.getElementById('editTaskId').value = task.TaskID;
+        document.getElementById('editTitle').value = task.Title;
+        document.getElementById('editInstructions').value = task.Instructions;
+        document.getElementById('editCategory').value = task.Category || 'General';
+        document.getElementById('editPriority').value = task.Priority || 'Normal';
+        document.getElementById('editDeadline').value = task.Deadline ? task.Deadline.slice(0, 16) : '';
+        document.getElementById('editTaskFile').value = "";
+        new bootstrap.Modal(document.getElementById('editModal')).show();
+    }
+
+    async function saveTaskEdit() {
+        const taskId = document.getElementById('editTaskId').value;
+        const fInp = document.getElementById('editTaskFile');
+        showLoader(true);
+        let fData = null, fName = "";
+        if (fInp.files[0]) {
+            fName = fInp.files[0].name;
+            fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
         }
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({
+            action: "EDIT_TASK", taskId,
+            title: document.getElementById('editTitle').value,
+            instructions: document.getElementById('editInstructions').value,
+            priority: document.getElementById('editPriority').value,
+            category: document.getElementById('editCategory').value,
+            deadline: document.getElementById('editDeadline').value,
+            fileData: fData, fileName: fName
+        })});
+        bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+        await refresh();
+        showLoader(false);
+    }
 
-        async function sendMsg() {
-            const inp = document.getElementById('chatInp');
-            if (!inp.value.trim()) return;
-            const btn = document.getElementById('sendBtn');
-            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value }) });
-            await refresh();
-            inp.value = ""; btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>';
+    // --- CREATE TASK ---
+    async function createTask() {
+        const empId = document.getElementById('empSelect').value;
+        const selectedEmp = globalData.users.find(u => String(u.ID) === String(empId));
+        const status = selectedEmp ? (selectedEmp.Status || 'Available') : 'Available';
+        if (status !== 'Available') {
+            if (!confirm(`⚠️ ATTENTION: ${selectedEmp.Name} is currently "${status}". Proceed anyway?`)) return;
         }
-
-        async function toggleArch(taskId, val) {
-            showLoader(true);
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "TOGGLE_ARCHIVE", taskId, archived: val }) });
-            await refresh();
-            showLoader(false);
+        const btn = document.getElementById('createBtn');
+        const fInp = document.getElementById('taskFile');
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
+        showLoader(true);
+        let fData = null, fName = "";
+        if (fInp.files[0]) {
+            fName = fInp.files[0].name;
+            fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
         }
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({
+            action: "CREATE_TASK", empId, empName: selectedEmp.Name,
+            title: document.getElementById('taskTitle').value,
+            instructions: document.getElementById('taskInstructions').value,
+            priority: document.getElementById('taskPriority').value,
+            category: document.getElementById('taskCategory').value,
+            deadline: document.getElementById('taskDeadline').value,
+            fileData: fData, fileName: fName
+        })});
+        btn.disabled = false; btn.innerText = 'Dispatch Task';
+        document.getElementById('taskTitle').value = "";
+        document.getElementById('taskInstructions').value = "";
+        document.getElementById('taskDeadline').value = "";
+        fInp.value = "";
+        showLoader(false);
+        refresh();
+    }
 
-        window.onload = () => {
-            if (session) {
-                document.getElementById('dirNameDisplay').innerText = session.Name;
-                document.getElementById('dirPic').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(session.Name)}&background=random`;
-            }
-            refresh();
-        };
+    // --- CHAT ---
+    function openChat(taskId, title) {
+        activeTaskId = taskId;
+        document.getElementById('chatTaskTitle').innerText = title;
+        renderComments();
+        new bootstrap.Modal(document.getElementById('chatModal')).show();
+    }
 
-        setInterval(() => refresh(true), 15000);
-    </script>
+    // FIX: messages now stack from top to bottom (oldest first, newest last at bottom)
+    function renderComments() {
+        const container = document.getElementById('chatBody');
+        const comments = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
+        container.innerHTML = `
+            <div class="chat-container" id="chatScroll">
+                <div class="chat-messages">
+                    ${comments.length
+                        ? comments.map(c => `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`).join('')
+                        : '<div class="text-center text-muted small py-4">Start the conversation...</div>'
+                    }
+                </div>
+            </div>
+            <div class="p-3 bg-white border-top">
+                <div class="input-group">
+                    <input type="text" id="chatInp" class="form-control border-0 bg-light rounded-pill px-3" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg()">
+                    <button id="sendBtn" class="btn btn-primary rounded-circle ms-2" onclick="sendMsg()"><i class="bi bi-send-fill"></i></button>
+                </div>
+            </div>`;
+        const s = document.getElementById('chatScroll');
+        if (s) s.scrollTop = s.scrollHeight;
+    }
+
+    async function sendMsg() {
+        const inp = document.getElementById('chatInp');
+        if (!inp.value.trim()) return;
+        const btn = document.getElementById('sendBtn');
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value }) });
+        await refresh();
+        inp.value = ""; btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>';
+    }
+
+    async function toggleArch(taskId, val) {
+        showLoader(true);
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "TOGGLE_ARCHIVE", taskId, archived: val }) });
+        await refresh();
+        showLoader(false);
+    }
+
+    window.onload = () => {
+        if (session) {
+            document.getElementById('dirNameDisplay').innerText = session.Name;
+            document.getElementById('dirPic').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(session.Name)}&background=random`;
+        }
+        refresh();
+    };
+
+    setInterval(() => refresh(true), 15000);
+</script>
 </body>
 </html>
