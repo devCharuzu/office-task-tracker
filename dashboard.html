@@ -418,13 +418,13 @@ function renderComments() {
     const comments  = globalData.comments.filter(c =>
         String(c.TaskID) === String(activeTaskId) &&
         !String(c.HiddenBy || '').includes(session.ID)
-    );
+    ).slice().reverse();
 
     const bubbles = comments.length
         ? comments.map(c =>
             `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`
           ).join('')
-        : '<div class="text-center text-muted small py-3" style="align-self:center;">Start the conversation...</div>';
+        : '<div class="text-center text-muted small py-3">Start the conversation...</div>';
 
     container.innerHTML = `
         <div class="chat-container" id="chatScroll">
@@ -440,6 +440,10 @@ function renderComments() {
             </div>
         </div>`;
 
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        const s = document.getElementById('chatScroll');
+        if (s) s.scrollTop = s.scrollHeight;
+    }));
 }
 
 async function sendMsg() {
