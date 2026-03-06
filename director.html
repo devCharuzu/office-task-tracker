@@ -196,7 +196,7 @@
                 <label class="small fw-bold text-muted mb-1">Deadline</label>
                 <input type="datetime-local" id="taskDeadline" class="form-control mb-4 bg-light border-0">
                 <label class="small fw-bold text-muted mb-1">Attachment (Optional)</label>
-                <input type="file" id="taskFile" class="form-control mb-4 bg-light border-0 small">
+                <input type="file" id="taskFile" class="form-control mb-4 bg-light border-0 small" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.mp4,.mp3,.mov,.avi,.csv">
                 <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold shadow-sm">Dispatch Task</button>
             </div>
         </div>
@@ -259,7 +259,7 @@
                     </select>
                 </div>
                 <div class="mb-3"><label class="small fw-bold text-muted">Deadline</label><input type="datetime-local" id="editDeadline" class="form-control bg-light border-0"></div>
-                <div class="mb-3"><label class="small fw-bold text-muted">Replace File (Optional)</label><input type="file" id="editTaskFile" class="form-control bg-light border-0 small"></div>
+                <div class="mb-3"><label class="small fw-bold text-muted">Replace File (Optional)</label><input type="file" id="editTaskFile" class="form-control bg-light border-0 small" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.mp4,.mp3,.mov,.avi,.csv"></div>
                 <button onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Task</button>
             </div>
         </div>
@@ -343,16 +343,20 @@
 
     function buildThumb(task) {
         if (!task.FileLink) return '';
-        const url = task.FileLink;
-        const name = decodeURIComponent(url.split('?')[0].split('/').pop()) || 'attachment';
-        fileMap[String(task.TaskID)] = { url, name };
-        const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url);
-        const ext = url.split('?')[0].split('.').pop().toLowerCase();
-        const iconMap = { pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📑', pptx:'📑', zip:'🗜️', txt:'📃' };
-        const inner = isImage
-            ? `<img class="attachment-thumb" src="${url}" alt="file" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="attachment-icon-box" style="display:none;">🖼️</div>`
-            : `<div class="attachment-icon-box">${iconMap[ext] || '📎'}</div>`;
-        return `<div class="attachment-wrap" onclick="openLightbox('${task.TaskID}')">${inner}<div class="attachment-label">${name}</div></div>`;
+        const urls = task.FileLink.split('|').filter(Boolean);
+        const iconMap = { pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📑', pptx:'📑', zip:'🗜️', txt:'📃', mp4:'🎬', mp3:'🎵', mov:'🎬', avi:'🎬', csv:'📊' };
+
+        return urls.map((url, i) => {
+            const name = decodeURIComponent(url.split('?')[0].split('/').pop()) || 'attachment';
+            const key = `${task.TaskID}_${i}`;
+            fileMap[key] = { url, name };
+            const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url);
+            const ext = url.split('?')[0].split('.').pop().toLowerCase();
+            const inner = isImage
+                ? `<img class="attachment-thumb" src="${url}" alt="file" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="attachment-icon-box" style="display:none;">🖼️</div>`
+                : `<div class="attachment-icon-box">${iconMap[ext] || '📎'}</div>`;
+            return `<div class="attachment-wrap" onclick="openLightbox('${key}')">${inner}<div class="attachment-label">${name}</div></div>`;
+        }).join('');
     }
 
     // --- NOTIFICATIONS ---
@@ -518,11 +522,7 @@
         const taskId = document.getElementById('editTaskId').value;
         const fInp = document.getElementById('editTaskFile');
         showLoader(true);
-        let fData = null, fName = "";
-        if (fInp.files[0]) {
-            fName = fInp.files[0].name;
-            fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
-        }
+        const files = await readFiles(fInp.files);
         await fetch(API_URL, { method: 'POST', body: JSON.stringify({
             action: "EDIT_TASK", taskId,
             title: document.getElementById('editTitle').value,
@@ -530,11 +530,23 @@
             priority: document.getElementById('editPriority').value,
             category: document.getElementById('editCategory').value,
             deadline: document.getElementById('editDeadline').value,
-            fileData: fData, fileName: fName
+            files
         })});
         bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
         await refresh();
         showLoader(false);
+    }
+
+    // --- FILE READER HELPER ---
+    async function readFiles(fileList) {
+        if (!fileList || fileList.length === 0) return [];
+        return Promise.all(Array.from(fileList).map(f =>
+            new Promise(r => {
+                const rd = new FileReader();
+                rd.onload = () => r({ name: f.name, data: rd.result.split(',')[1] });
+                rd.readAsDataURL(f);
+            })
+        ));
     }
 
     // --- CREATE TASK ---
@@ -549,11 +561,7 @@
         const fInp = document.getElementById('taskFile');
         btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
         showLoader(true);
-        let fData = null, fName = "";
-        if (fInp.files[0]) {
-            fName = fInp.files[0].name;
-            fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
-        }
+        const files = await readFiles(fInp.files);
         await fetch(API_URL, { method: 'POST', body: JSON.stringify({
             action: "CREATE_TASK", empId, empName: selectedEmp.Name,
             title: document.getElementById('taskTitle').value,
@@ -561,7 +569,7 @@
             priority: document.getElementById('taskPriority').value,
             category: document.getElementById('taskCategory').value,
             deadline: document.getElementById('taskDeadline').value,
-            fileData: fData, fileName: fName
+            files
         })});
         btn.disabled = false; btn.innerText = 'Dispatch Task';
         document.getElementById('taskTitle').value = "";
