@@ -29,16 +29,36 @@
             cursor: pointer; outline: none; transition: 0.2s;
         }
         .presence-select:hover { transform: scale(1.02); }
-
         .spinner-btn { width: 1rem; height: 1rem; border-width: 0.15em; }
         .mobile-nav { position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-around; padding: 12px 0; z-index: 1000; }
 
-        /* Chat UI - FIX: proper stacking */
-        .chat-modal-body { height: 500px; display: flex; flex-direction: column; background: #fff; }
-        .chat-container { flex-grow: 1; overflow-y: auto; padding: 20px; background: var(--messenger-bg); display: flex; flex-direction: column; justify-content: flex-end; }
-        .chat-messages { display: flex; flex-direction: column; }
-        .msg-bubble { padding: 10px 16px; border-radius: 18px; font-size: 0.9rem; max-width: 85%; margin-bottom: 10px; }
-        .own { align-self: flex-end; background: var(--messenger-blue); color: white; border-bottom-right-radius: 4px; }
+        /* ── CHAT FIX ── */
+        .chat-modal-body {
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-container {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            padding: 16px;
+            background: var(--messenger-bg);
+            display: flex;
+            flex-direction: column;   /* top→bottom natural order */
+            gap: 4px;
+        }
+        /* spacer pushes first messages down when there are only a few */
+        .chat-spacer { flex: 1 1 auto; }
+
+        .msg-bubble {
+            padding: 10px 16px;
+            border-radius: 18px;
+            font-size: 0.9rem;
+            max-width: 75%;
+            word-break: break-word;
+            flex-shrink: 0;
+        }
+        .own  { align-self: flex-end;  background: var(--messenger-blue); color: white; border-bottom-right-radius: 4px; }
         .theirs { align-self: flex-start; background: white; color: black; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
 
         /* Notification Bell */
@@ -74,44 +94,72 @@
         .toast-notif.chat { border-left-color: #0084ff; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* File Thumbnail */
-        .file-thumb-wrap { position: relative; display: inline-block; cursor: pointer; margin-bottom: 12px; }
-        .file-thumb-wrap img { width: 80px; height: 80px; object-fit: cover; border-radius: 12px; border: 2px solid #e5e7eb; transition: 0.2s; }
-        .file-thumb-wrap:hover img { border-color: #3b82f6; }
-        .file-thumb-icon { width: 80px; height: 80px; border-radius: 12px; border: 2px solid #e5e7eb; background: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.8rem; color: #3b82f6; transition: 0.2s; }
-        .file-thumb-wrap:hover .file-thumb-icon { border-color: #3b82f6; background: #eff6ff; }
-        .file-thumb-label { font-size: 0.65rem; color: #6b7280; text-align: center; margin-top: 4px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* File Attachment Thumbnail */
+        .attachment-wrap {
+            display: inline-flex; flex-direction: column; align-items: center;
+            cursor: pointer; margin-bottom: 12px;
+        }
+        .attachment-thumb {
+            width: 80px; height: 80px; border-radius: 12px;
+            border: 2px solid #e5e7eb; object-fit: cover;
+            transition: border-color 0.2s;
+        }
+        .attachment-wrap:hover .attachment-thumb { border-color: #3b82f6; }
+        .attachment-icon-box {
+            width: 80px; height: 80px; border-radius: 12px;
+            border: 2px solid #e5e7eb; background: #f8fafc;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; transition: border-color 0.2s, background 0.2s;
+        }
+        .attachment-wrap:hover .attachment-icon-box { border-color: #3b82f6; background: #eff6ff; }
+        .attachment-label {
+            font-size: 0.65rem; color: #6b7280; margin-top: 4px;
+            max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
+        }
 
         /* Lightbox */
         #lightboxOverlay {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            z-index: 99999; align-items: center; justify-content: center; flex-direction: column;
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.88); z-index: 99999;
+            flex-direction: column; align-items: center; justify-content: center;
         }
         #lightboxOverlay.show { display: flex; }
-        #lightboxImg { max-width: 90vw; max-height: 75vh; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-        #lightboxClose { position: absolute; top: 20px; right: 24px; color: white; font-size: 2rem; cursor: pointer; line-height: 1; }
-        #lightboxDownload { margin-top: 16px; color: white; background: #3b82f6; border: none; border-radius: 20px; padding: 8px 24px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        #lightboxFileName { color: #d1d5db; font-size: 0.8rem; margin-top: 8px; }
+        #lightboxClose {
+            position: absolute; top: 18px; right: 22px;
+            color: white; font-size: 2.2rem; cursor: pointer; line-height: 1; z-index: 2;
+        }
+        #lightboxImg { max-width: 88vw; max-height: 72vh; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        #lightboxIconBig { font-size: 6rem; }
+        #lightboxName { color: #d1d5db; font-size: 0.82rem; margin-top: 10px; }
+        .lightbox-actions { display: flex; gap: 12px; margin-top: 16px; }
+        .lb-btn {
+            color: white; border: none; border-radius: 20px;
+            padding: 8px 22px; font-weight: 600; font-size: 0.88rem;
+            cursor: pointer; display: flex; align-items: center; gap: 7px;
+        }
+        #lbViewBtn  { background: #3b82f6; }
+        #lbDlBtn    { background: #10b981; }
     </style>
 </head>
 <body>
 
 <div id="globalLoader">
-    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"></div>
     <p class="mt-3 fw-bold text-primary">Synchronizing...</p>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- Lightbox -->
-<div id="lightboxOverlay" onclick="closeLightbox(event)">
+<div id="lightboxOverlay">
     <span id="lightboxClose" onclick="closeLightbox()">&times;</span>
     <img id="lightboxImg" src="" alt="Preview" style="display:none;">
-    <div id="lightboxFileIcon" style="display:none; font-size:5rem; color:white;"></div>
-    <div id="lightboxFileName"></div>
-    <button id="lightboxDownload" onclick="downloadFile()">
-        <i class="bi bi-download"></i> Download File
-    </button>
+    <div id="lightboxIconBig" style="display:none;"></div>
+    <div id="lightboxName"></div>
+    <div class="lightbox-actions">
+        <button class="lb-btn" id="lbViewBtn" onclick="lbOpen()"><i class="bi bi-eye-fill"></i> View</button>
+        <button class="lb-btn" id="lbDlBtn"   onclick="lbDownload()"><i class="bi bi-download"></i> Download</button>
+    </div>
 </div>
 
 <main class="container py-4">
@@ -135,12 +183,12 @@
                         <span class="fw-bold small">Notifications</span>
                         <span class="text-primary small" style="cursor:pointer;" onclick="markAllRead()">Mark all read</span>
                     </div>
-                    <div id="notifList" style="max-height:300px; overflow-y:auto;"></div>
+                    <div id="notifList" style="max-height:300px;overflow-y:auto;"></div>
                 </div>
             </div>
             <div>
                 <div class="bg-white px-3 py-1 rounded-pill shadow-sm small fw-bold" id="userName">---</div>
-                <small class="text-muted d-block mt-1" id="userOffice" style="font-size: 0.7rem;">---</small>
+                <small class="text-muted d-block mt-1" id="userOffice" style="font-size:0.7rem;">---</small>
             </div>
         </div>
     </div>
@@ -170,285 +218,262 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://taskflow-api.jcpanganiban1.workers.dev";
+const API_URL = "https://taskflow-api.jcpanganiban1.workers.dev";
 
-    let session = JSON.parse(localStorage.getItem('office_session')),
-        globalData = { tasks: [], comments: [], users: [], notifications: [] },
-        activeTaskId = null,
-        lastDataHash = "",
-        lastNotifCount = 0,
-        lightboxFileUrl = "",
-        lightboxFileNameStr = "";
+let session       = JSON.parse(localStorage.getItem('office_session')),
+    globalData    = { tasks:[], comments:[], users:[], notifications:[] },
+    activeTaskId  = null,
+    lastDataHash  = "",
+    lastNotifCount= 0,
+    lbFileUrl     = "",
+    lbFileName    = "";
 
-    if (!session) window.location.href = "index.html";
+if (!session) window.location.href = "index.html";
 
-    function showLoader(show) { document.getElementById('globalLoader').style.display = show ? 'flex' : 'none'; }
-    function logout() { localStorage.clear(); window.location.href = "index.html"; }
+function showLoader(v){ document.getElementById('globalLoader').style.display = v?'flex':'none'; }
+function logout(){ localStorage.clear(); window.location.href="index.html"; }
 
-    // --- LIGHTBOX ---
-    function openLightbox(url, name) {
-        lightboxFileUrl = url;
-        lightboxFileNameStr = name || "attachment";
-        const overlay = document.getElementById('lightboxOverlay');
-        const img = document.getElementById('lightboxImg');
-        const icon = document.getElementById('lightboxFileIcon');
-        const fname = document.getElementById('lightboxFileName');
+/* ── LIGHTBOX ── */
+function openLightbox(url, name){
+    lbFileUrl  = url;
+    lbFileName = name || "attachment";
 
-        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(url);
-        if (isImage) {
-            img.src = url; img.style.display = 'block';
-            icon.style.display = 'none';
-        } else {
-            img.style.display = 'none';
-            const ext = url.split('.').pop().split('?')[0].toLowerCase();
-            const iconMap = { pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊', ppt: '📑', pptx: '📑', zip: '🗜️', txt: '📃' };
-            icon.innerHTML = iconMap[ext] || '📎';
-            icon.style.display = 'flex';
-            icon.style.alignItems = 'center';
-            icon.style.justifyContent = 'center';
-        }
-        fname.innerText = lightboxFileNameStr;
-        overlay.classList.add('show');
+    const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url);
+    const ext     = url.split('.').pop().split('?')[0].toLowerCase();
+    const iconMap = {pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📑',pptx:'📑',zip:'🗜️',txt:'📃'};
+
+    const img  = document.getElementById('lightboxImg');
+    const icon = document.getElementById('lightboxIconBig');
+
+    if(isImage){
+        img.src          = url;
+        img.style.display= 'block';
+        icon.style.display='none';
+    } else {
+        img.style.display ='none';
+        icon.innerHTML    = iconMap[ext] || '📎';
+        icon.style.display='block';
     }
-
-    function closeLightbox(e) {
-        if (!e || e.target === document.getElementById('lightboxOverlay') || e.currentTarget === document.getElementById('lightboxClose')) {
-            document.getElementById('lightboxOverlay').classList.remove('show');
-        }
-    }
-
-    function downloadFile() {
-        const a = document.createElement('a');
-        a.href = lightboxFileUrl;
-        a.download = lightboxFileNameStr;
-        a.target = '_blank';
-        document.body.appendChild(a);
+    document.getElementById('lightboxName').innerText = lbFileName;
+    document.getElementById('lightboxOverlay').classList.add('show');
+}
+function closeLightbox(){ document.getElementById('lightboxOverlay').classList.remove('show'); }
+/* clicking outside the content closes */
+document.getElementById('lightboxOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeLightbox();
+});
+/* open in new tab — works even for CORS-protected files */
+function lbOpen(){ window.open(lbFileUrl, '_blank'); }
+/* force download via fetch blob — fallback to new tab if blocked */
+async function lbDownload(){
+    try {
+        const resp = await fetch(lbFileUrl);
+        const blob = await resp.blob();
+        const a    = document.createElement('a');
+        a.href     = URL.createObjectURL(blob);
+        a.download = lbFileName;
         a.click();
-        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    } catch(e){
+        /* CORS blocked — open in new tab so user can save manually */
+        window.open(lbFileUrl, '_blank');
     }
+}
 
-    // --- NOTIFICATIONS ---
-    function toggleNotifDropdown() {
-        document.getElementById('notifDropdown').classList.toggle('show');
-    }
-
-    document.addEventListener('click', function(e) {
-        const bell = document.querySelector('.notif-bell');
-        if (bell && !bell.contains(e.target)) {
-            document.getElementById('notifDropdown').classList.remove('show');
-        }
-    });
-
-    function renderNotifications(notifications) {
-        const unread = notifications.filter(n => n.IsRead === 'FALSE');
-        const badge = document.getElementById('notifBadge');
-        if (unread.length > 0) {
-            badge.style.display = 'flex';
-            badge.innerText = unread.length > 9 ? '9+' : unread.length;
-        } else {
-            badge.style.display = 'none';
-        }
-        if (lastNotifCount > 0 && unread.length > lastNotifCount) {
-            const newest = notifications[0];
-            showToast(newest.Message, newest.Type);
-        }
-        lastNotifCount = unread.length;
-        const list = document.getElementById('notifList');
-        if (notifications.length === 0) {
-            list.innerHTML = '<div class="text-center text-muted small py-4">No notifications yet</div>';
-            return;
-        }
-        list.innerHTML = notifications.map(n => `
-            <div class="notif-item ${n.IsRead === 'FALSE' ? 'unread' : ''}">
+/* ── NOTIFICATIONS ── */
+function toggleNotifDropdown(){ document.getElementById('notifDropdown').classList.toggle('show'); }
+document.addEventListener('click', function(e){
+    const bell = document.querySelector('.notif-bell');
+    if(bell && !bell.contains(e.target)) document.getElementById('notifDropdown').classList.remove('show');
+});
+function renderNotifications(notifications){
+    const unread = notifications.filter(n=>n.IsRead==='FALSE');
+    const badge  = document.getElementById('notifBadge');
+    if(unread.length){ badge.style.display='flex'; badge.innerText=unread.length>9?'9+':unread.length; }
+    else badge.style.display='none';
+    if(lastNotifCount>0 && unread.length>lastNotifCount) showToast(notifications[0].Message, notifications[0].Type);
+    lastNotifCount=unread.length;
+    const list=document.getElementById('notifList');
+    list.innerHTML = notifications.length===0
+        ? '<div class="text-center text-muted small py-4">No notifications yet</div>'
+        : notifications.map(n=>`
+            <div class="notif-item ${n.IsRead==='FALSE'?'unread':''}">
                 <div>${n.Message}</div>
                 <div class="notif-time">${new Date(n.CreatedAt).toLocaleString()}</div>
-            </div>
-        `).join('');
-    }
+            </div>`).join('');
+}
+function showToast(message,type='info'){
+    const c=document.getElementById('toastContainer');
+    const t=document.createElement('div');
+    t.className=`toast-notif ${type}`;
+    t.innerHTML=`<i class="bi bi-${type==='chat'?'chat-fill text-primary':'clipboard-check-fill'} fs-5"></i>
+        <div><div class="fw-bold small">${type==='chat'?'New Message':'New Task'}</div>
+        <div style="font-size:0.78rem;color:#6b7280;">${message}</div></div>`;
+    c.appendChild(t); setTimeout(()=>t.remove(),5000);
+}
+async function markAllRead(){
+    await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"MARK_NOTIFICATIONS_READ",userId:session.ID})});
+    await sync();
+    document.getElementById('notifDropdown').classList.remove('show');
+}
 
-    function showToast(message, type = 'info') {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = `toast-notif ${type}`;
-        toast.innerHTML = `
-            <i class="bi bi-${type === 'chat' ? 'chat-fill text-primary' : 'clipboard-check-fill text-purple'} fs-5"></i>
-            <div>
-                <div class="fw-bold small" style="font-size:0.8rem;">${type === 'chat' ? 'New Message' : 'New Task'}</div>
-                <div style="font-size:0.78rem; color:#6b7280;">${message}</div>
-            </div>`;
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 5000);
-    }
+/* ── PRESENCE ── */
+async function updatePresence(status){
+    showLoader(true);
+    try{ await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"UPDATE_PRESENCE",userId:session.ID,status})}); }
+    catch(e){ console.error("Presence sync failed"); }
+    finally{ showLoader(false); }
+}
 
-    async function markAllRead() {
-        await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: "MARK_NOTIFICATIONS_READ", userId: session.ID })
-        });
-        await sync();
-        document.getElementById('notifDropdown').classList.remove('show');
-    }
+/* ── SYNC ── */
+async function sync(isAuto=false){
+    try{
+        const res    = await fetch(`${API_URL}?userId=${session.ID}`);
+        const newData= await res.json();
+        const myTasks= newData.tasks.filter(t=>String(t.EmployeeID)===String(session.ID));
+        const newHash= JSON.stringify(myTasks)+JSON.stringify(newData.comments)+JSON.stringify(newData.notifications);
+        if(newHash===lastDataHash && isAuto) return;
+        globalData   = newData;
+        lastDataHash = newHash;
+        const me = globalData.users.find(u=>String(u.ID)===String(session.ID));
+        if(me && me.Status) document.getElementById('presenceToggle').value=me.Status;
+        renderTasks(myTasks);
+        renderNotifications(newData.notifications||[]);
+        if(activeTaskId) renderComments();
+    } catch(e){ console.error("Sync failed",e); }
+}
 
-    // --- PRESENCE ---
-    async function updatePresence(status) {
-        showLoader(true);
-        try {
-            await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: "UPDATE_PRESENCE", userId: session.ID, status: status })
-            });
-        } catch (e) { console.error("Presence sync failed"); }
-        finally { showLoader(false); }
-    }
+/* ── RENDER TASKS ── */
+function buildThumb(fileLink){
+    if(!fileLink) return '';
+    const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(fileLink);
+    const ext     = fileLink.split('.').pop().split('?')[0].toLowerCase();
+    const iconMap = {pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📑',pptx:'📑',zip:'🗜️',txt:'📃'};
+    const name    = decodeURIComponent(fileLink.split('/').pop().split('?')[0]);
+    const safe    = fileLink.replace(/'/g,"\\'");
+    const safeName= name.replace(/'/g,"\\'");
 
-    // --- SYNC ---
-    async function sync(isAuto = false) {
-        try {
-            const res = await fetch(`${API_URL}?userId=${session.ID}`);
-            const newData = await res.json();
-            const myTasks = newData.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
-            const newHash = JSON.stringify(myTasks) + JSON.stringify(newData.comments) + JSON.stringify(newData.notifications);
-            if (newHash === lastDataHash && isAuto) return;
-            globalData = newData;
-            lastDataHash = newHash;
-            const me = globalData.users.find(u => String(u.ID) === String(session.ID));
-            if (me && me.Status) document.getElementById('presenceToggle').value = me.Status;
-            renderTasks(myTasks);
-            renderNotifications(newData.notifications || []);
-            if (activeTaskId) renderComments();
-        } catch (e) { console.error("Sync failed", e); }
-    }
-
-    // --- RENDER TASKS ---
-    function getFileThumbHtml(fileLink) {
-        if (!fileLink) return '';
-        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(fileLink);
-        const ext = fileLink.split('.').pop().split('?')[0].toLowerCase();
-        const iconMap = { pdf: 'bi-file-earmark-pdf', doc: 'bi-file-earmark-word', docx: 'bi-file-earmark-word', xls: 'bi-file-earmark-excel', xlsx: 'bi-file-earmark-excel', ppt: 'bi-file-earmark-ppt', pptx: 'bi-file-earmark-ppt', zip: 'bi-file-earmark-zip', txt: 'bi-file-earmark-text' };
-        const iconClass = iconMap[ext] || 'bi-file-earmark';
-        const shortName = fileLink.split('/').pop().split('?')[0];
-        if (isImage) {
-            return `
-                <div class="file-thumb-wrap" onclick="openLightbox('${fileLink}', '${shortName}')">
-                    <img src="${fileLink}" alt="attachment" onerror="this.parentElement.innerHTML=getFallbackThumb('${iconClass}','${shortName}','${fileLink}')">
-                    <div class="file-thumb-label">${shortName}</div>
+    if(isImage){
+        return `<div class="attachment-wrap" onclick="openLightbox('${safe}','${safeName}')">
+                    <img class="attachment-thumb" src="${safe}" alt="attachment"
+                         onerror="this.parentElement.querySelector('.attachment-icon-box') && void 0;
+                                  this.style.display='none';
+                                  this.nextElementSibling.style.display='flex';">
+                    <div class="attachment-icon-box" style="display:none;">🖼️</div>
+                    <div class="attachment-label">${name}</div>
                 </div>`;
-        } else {
-            return `
-                <div class="file-thumb-wrap" onclick="openLightbox('${fileLink}', '${shortName}')">
-                    <div class="file-thumb-icon"><i class="bi ${iconClass}"></i></div>
-                    <div class="file-thumb-label">${shortName}</div>
-                </div>`;
-        }
     }
-
-    function renderTasks(myTasks) {
-        const feed = document.getElementById('taskFeed');
-        const activeTasks = myTasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE");
-        if (activeTasks.length === 0) {
-            feed.innerHTML = '<div class="text-center py-5 text-muted">No active tasks.</div>';
-            return;
-        }
-        const priorityBadge = { 'Urgent': 'danger', 'High': 'warning', 'Medium': 'info', 'Low': 'secondary', 'Normal': 'success' };
-        feed.innerHTML = activeTasks.slice().reverse().map(t => {
-            const deadlineHtml = t.Deadline ? `
-                <div class="d-flex align-items-center gap-1 mb-2">
-                    <i class="bi bi-clock text-danger" style="font-size:0.8rem;"></i>
-                    <small class="text-danger fw-bold">Due: ${new Date(t.Deadline).toLocaleString()}</small>
-                </div>` : '';
-            const priorityColor = priorityBadge[t.Priority] || 'success';
-            const categoryHtml = t.Category ? `<span class="badge bg-light text-dark border me-1"><i class="bi bi-tag me-1"></i>${t.Category}</span>` : '';
-            const priorityHtml = t.Priority ? `<span class="badge bg-${priorityColor} bg-opacity-10 text-${priorityColor} border border-${priorityColor}"><i class="bi bi-flag me-1"></i>${t.Priority}</span>` : '';
-            const thumbHtml = getFileThumbHtml(t.FileLink);
-
-            return `
-            <div class="col-12">
-                <div class="task-card">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="status-pill status-${t.Status.toLowerCase()}">${t.Status}</span>
-                        <small class="text-muted">#${t.TaskID}</small>
-                    </div>
-                    <div class="d-flex gap-1 flex-wrap mb-2">${categoryHtml}${priorityHtml}</div>
-                    <h5 class="fw-bold">${t.Title}</h5>
-                    <p class="text-muted small">${t.Instructions}</p>
-                    ${deadlineHtml}
-                    ${thumbHtml}
-                    <div class="d-flex gap-2">
-                        ${t.Status === 'Assigned' ? `<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}', 'Received')" class="btn btn-primary w-100 rounded-pill fw-bold">Accept</button>` : ''}
-                        ${t.Status === 'Received' ? `<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}', 'Completed')" class="btn btn-success w-100 rounded-pill fw-bold">Complete</button>` : ''}
-                        ${t.Status === 'Completed' ? `<button class="btn btn-light w-100 rounded-pill fw-bold" disabled>Finished</button>` : ''}
-                        <button onclick="openChat('${t.TaskID}', '${t.Title}')" class="btn btn-dark rounded-pill px-3"><i class="bi bi-chat-text-fill"></i></button>
-                    </div>
-                </div>
+    return `<div class="attachment-wrap" onclick="openLightbox('${safe}','${safeName}')">
+                <div class="attachment-icon-box">${iconMap[ext]||'📎'}</div>
+                <div class="attachment-label">${name}</div>
             </div>`;
-        }).join('');
-    }
+}
 
-    // --- TASK STATUS ---
-    async function updateTaskStatus(taskId, status) {
-        const btn = document.getElementById(`btn-${taskId}`);
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
-        showLoader(true);
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SET_STATUS", taskId, status }) });
-        await sync();
-        showLoader(false);
-    }
+function renderTasks(myTasks){
+    const feed       = document.getElementById('taskFeed');
+    const activeTasks= myTasks.filter(t=>String(t.Archived).toUpperCase()!=='TRUE');
+    if(!activeTasks.length){ feed.innerHTML='<div class="text-center py-5 text-muted">No active tasks.</div>'; return; }
 
-    // --- CHAT ---
-    function openChat(taskId, title) {
-        activeTaskId = taskId;
-        document.getElementById('chatTitle').innerText = title;
-        renderComments();
-        new bootstrap.Modal(document.getElementById('chatModal')).show();
-    }
+    const priorityBadge={Urgent:'danger',High:'warning',Medium:'info',Low:'secondary',Normal:'success'};
+    feed.innerHTML = activeTasks.slice().reverse().map(t=>{
+        const deadlineHtml = t.Deadline ? `
+            <div class="d-flex align-items-center gap-1 mb-2">
+                <i class="bi bi-clock text-danger" style="font-size:0.8rem;"></i>
+                <small class="text-danger fw-bold">Due: ${new Date(t.Deadline).toLocaleString()}</small>
+            </div>` : '';
+        const pc   = priorityBadge[t.Priority]||'success';
+        const catH = t.Category?`<span class="badge bg-light text-dark border me-1"><i class="bi bi-tag me-1"></i>${t.Category}</span>`:'';
+        const priH = t.Priority?`<span class="badge bg-${pc} bg-opacity-10 text-${pc} border border-${pc}"><i class="bi bi-flag me-1"></i>${t.Priority}</span>`:'';
 
-    // FIX: messages stack top to bottom, newest at bottom
-    function renderComments() {
-        const container = document.getElementById('chatBody');
-        const comments = globalData.comments.filter(c =>
-            String(c.TaskID) === String(activeTaskId) &&
-            !String(c.HiddenBy || "").includes(session.ID)
-        );
-        container.innerHTML = `
-            <div class="chat-container" id="chatScroll">
-                <div class="chat-messages">
-                    ${comments.length
-                        ? comments.map(c => `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`).join('')
-                        : '<div class="text-center text-muted small py-4">Start the conversation...</div>'
-                    }
-                </div>
+        return `<div class="col-12"><div class="task-card">
+            <div class="d-flex justify-content-between mb-2">
+                <span class="status-pill status-${t.Status.toLowerCase()}">${t.Status}</span>
+                <small class="text-muted">#${t.TaskID}</small>
             </div>
-            <div class="p-3 bg-white border-top">
-                <div class="input-group">
-                    <input type="text" id="chatInp" class="form-control border-0 bg-light rounded-pill px-3" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg()">
-                    <button id="sendBtn" class="btn btn-primary rounded-circle ms-2" onclick="sendMsg()"><i class="bi bi-send-fill"></i></button>
-                </div>
-            </div>`;
-        const s = document.getElementById('chatScroll');
-        if (s) s.scrollTop = s.scrollHeight;
-    }
+            <div class="d-flex gap-1 flex-wrap mb-2">${catH}${priH}</div>
+            <h5 class="fw-bold">${t.Title}</h5>
+            <p class="text-muted small">${t.Instructions}</p>
+            ${deadlineHtml}
+            ${buildThumb(t.FileLink)}
+            <div class="d-flex gap-2">
+                ${t.Status==='Assigned'?`<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}','Received')" class="btn btn-primary w-100 rounded-pill fw-bold">Accept</button>`:''}
+                ${t.Status==='Received'?`<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}','Completed')" class="btn btn-success w-100 rounded-pill fw-bold">Complete</button>`:''}
+                ${t.Status==='Completed'?`<button class="btn btn-light w-100 rounded-pill fw-bold" disabled>Finished</button>`:''}
+                <button onclick="openChat('${t.TaskID}','${t.Title}')" class="btn btn-dark rounded-pill px-3"><i class="bi bi-chat-text-fill"></i></button>
+            </div>
+        </div></div>`;
+    }).join('');
+}
 
-    async function sendMsg() {
-        const inp = document.getElementById('chatInp');
-        if (!inp.value.trim()) return;
-        const btn = document.getElementById('sendBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value }) });
-        await sync();
-        inp.value = "";
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-send-fill"></i>';
-    }
+/* ── TASK STATUS ── */
+async function updateTaskStatus(taskId,status){
+    const btn=document.getElementById(`btn-${taskId}`);
+    btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-btn"></span>';
+    showLoader(true);
+    await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"SET_STATUS",taskId,status})});
+    await sync(); showLoader(false);
+}
 
-    window.onload = () => {
-        document.getElementById('userName').innerText = session.Name;
-        document.getElementById('userOffice').innerText = session.Office;
-        sync();
-    };
+/* ── CHAT ── */
+function openChat(taskId,title){
+    activeTaskId=taskId;
+    document.getElementById('chatTitle').innerText=title;
+    renderComments();
+    new bootstrap.Modal(document.getElementById('chatModal')).show();
+}
 
-    setInterval(() => sync(true), 15000);
+/*  KEY FIX:
+    - flex-direction: column  →  items flow top → bottom (oldest first)
+    - .chat-spacer fills empty space so first messages sit at bottom (like Messenger)
+    - scrollTop = scrollHeight scrolls to the very last message                       */
+function renderComments(){
+    const container = document.getElementById('chatBody');
+    const comments  = globalData.comments.filter(c=>
+        String(c.TaskID)===String(activeTaskId) &&
+        !String(c.HiddenBy||'').includes(session.ID)
+    );
+    const bubbles = comments.map(c=>
+        `<div class="msg-bubble ${c.SenderName===session.Name?'own':'theirs'}">${c.Message}</div>`
+    ).join('');
+
+    container.innerHTML = `
+        <div class="chat-container" id="chatScroll">
+            <div class="chat-spacer"></div>
+            ${bubbles || '<div class="text-center text-muted small py-3">Start the conversation...</div>'}
+        </div>
+        <div class="p-3 bg-white border-top" style="flex-shrink:0;">
+            <div class="input-group">
+                <input type="text" id="chatInp" class="form-control border-0 bg-light rounded-pill px-3"
+                       placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg()">
+                <button id="sendBtn" class="btn btn-primary rounded-circle ms-2" onclick="sendMsg()">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
+        </div>`;
+
+    /* scroll to bottom after paint */
+    requestAnimationFrame(()=>{
+        const s=document.getElementById('chatScroll');
+        if(s) s.scrollTop=s.scrollHeight;
+    });
+}
+
+async function sendMsg(){
+    const inp=document.getElementById('chatInp');
+    if(!inp.value.trim()) return;
+    const btn=document.getElementById('sendBtn');
+    btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-btn"></span>';
+    await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"ADD_COMMENT",taskId:activeTaskId,sender:session.Name,message:inp.value})});
+    await sync();
+    inp.value=''; btn.disabled=false; btn.innerHTML='<i class="bi bi-send-fill"></i>';
+}
+
+window.onload=()=>{
+    document.getElementById('userName').innerText  =session.Name;
+    document.getElementById('userOffice').innerText=session.Office;
+    sync();
+};
+setInterval(()=>sync(true),15000);
 </script>
 </body>
 </html>
