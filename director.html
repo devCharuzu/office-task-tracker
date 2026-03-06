@@ -10,7 +10,7 @@
     <style>
         :root { --messenger-blue: #0084ff; --messenger-bg: #f0f2f5; --sidebar-width: 280px; }
         body { background: #f3f4f6; font-family: 'Inter', sans-serif; margin: 0; }
-        
+
         #globalLoader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.8); display: none;
@@ -19,7 +19,7 @@
 
         .sidebar { background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; width: var(--sidebar-width); z-index: 1000; padding: 30px; }
         .main-content { margin-left: var(--sidebar-width); padding: 40px; min-height: 100vh; transition: 0.3s; }
-        
+
         .mobile-nav { display: none; }
 
         .card-custom { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 20px; }
@@ -37,12 +37,12 @@
 
         @media (max-width: 767px) {
             .sidebar { display: none !important; }
-            .mobile-nav { 
-                display: flex !important; 
-                justify-content: space-around; 
+            .mobile-nav {
+                display: flex !important;
+                justify-content: space-around;
                 align-items: center;
                 position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
-                background: white; border-top: 1px solid #e5e7eb; z-index: 2000; 
+                background: white; border-top: 1px solid #e5e7eb; z-index: 2000;
                 box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
             }
             .mobile-nav a { flex: 1; text-align: center; color: #6b7280; text-decoration: none; font-size: 1.2rem; }
@@ -81,40 +81,34 @@
         <div class="row g-4">
             <div class="col-xl-4 col-lg-5">
                 <div class="card card-custom border-top border-primary border-4 shadow-sm">
-    <h6 class="fw-bold mb-4">Create Assignment</h6>
-    <label class="small fw-bold text-muted mb-1">Select Employee</label>
-    <select id="empSelect" class="form-select mb-3 bg-light border-0 py-2"></select>
-    
-    <input type="text" id="taskTitle" class="form-control mb-3 bg-light border-0" placeholder="Task Title">
-    <textarea id="taskInstructions" class="form-control mb-3 bg-light border-0" rows="3" placeholder="Instructions..."></textarea>
-    
-    <label class="small fw-bold text-muted mb-1">Category</label>
-    <select id="taskCategory" class="form-select mb-3 bg-light border-0">
-        <option value="General">General</option>
-        <option value="Report">Report</option>
-        <option value="Document">Document</option>
-        <option value="Project">Project</option>
-        <option value="Meeting">Meeting</option>
-        <option value="Others">Others</option>
-    </select>
-
-    <label class="small fw-bold text-muted mb-1">Priority</label>
-    <select id="taskPriority" class="form-select mb-3 bg-light border-0">
-        <option value="Normal">🟢 Normal</option>
-        <option value="Low">⚪ Low</option>
-        <option value="Medium">🟡 Medium</option>
-        <option value="High">🟠 High</option>
-        <option value="Urgent">🔴 Urgent</option>
-    </select>
-
-    <label class="small fw-bold text-muted mb-1">Deadline</label>
-    <input type="datetime-local" id="taskDeadline" class="form-control mb-4 bg-light border-0">
-
-    <label class="small fw-bold text-muted mb-1">Attachment (Optional)</label>
-    <input type="file" id="taskFile" class="form-control mb-4 bg-light border-0 small">
-    
-    <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold shadow-sm">Dispatch Task</button>
-</div>
+                    <h6 class="fw-bold mb-4">Create Assignment</h6>
+                    <label class="small fw-bold text-muted mb-1">Select Employee</label>
+                    <select id="empSelect" class="form-select mb-3 bg-light border-0 py-2"></select>
+                    <input type="text" id="taskTitle" class="form-control mb-3 bg-light border-0" placeholder="Task Title">
+                    <textarea id="taskInstructions" class="form-control mb-3 bg-light border-0" rows="3" placeholder="Instructions..."></textarea>
+                    <label class="small fw-bold text-muted mb-1">Category</label>
+                    <select id="taskCategory" class="form-select mb-3 bg-light border-0">
+                        <option value="General">General</option>
+                        <option value="Report">Report</option>
+                        <option value="Document">Document</option>
+                        <option value="Project">Project</option>
+                        <option value="Meeting">Meeting</option>
+                        <option value="Others">Others</option>
+                    </select>
+                    <label class="small fw-bold text-muted mb-1">Priority</label>
+                    <select id="taskPriority" class="form-select mb-3 bg-light border-0">
+                        <option value="Normal">🟢 Normal</option>
+                        <option value="Low">⚪ Low</option>
+                        <option value="Medium">🟡 Medium</option>
+                        <option value="High">🟠 High</option>
+                        <option value="Urgent">🔴 Urgent</option>
+                    </select>
+                    <label class="small fw-bold text-muted mb-1">Deadline</label>
+                    <input type="datetime-local" id="taskDeadline" class="form-control mb-4 bg-light border-0">
+                    <label class="small fw-bold text-muted mb-1">Attachment (Optional)</label>
+                    <input type="file" id="taskFile" class="form-control mb-4 bg-light border-0 small">
+                    <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold shadow-sm">Dispatch Task</button>
+                </div>
             </div>
 
             <div class="col-xl-8 col-lg-7">
@@ -137,6 +131,7 @@
         </div>
     </main>
 
+    <!-- Archive Modal -->
     <div class="modal fade" id="archiveModal" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content border-0 rounded-4">
@@ -146,6 +141,7 @@
         </div>
     </div>
 
+    <!-- Edit Modal -->
     <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 rounded-4">
@@ -153,51 +149,52 @@
                     <h6 class="fw-bold m-0">Edit Assignment</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-             <div class="modal-body p-4">
-    <input type="hidden" id="editTaskId">
-    <div class="mb-3">
-        <label class="small fw-bold text-muted">Title</label>
-        <input type="text" id="editTitle" class="form-control bg-light border-0">
-    </div>
-    <div class="mb-3">
-        <label class="small fw-bold text-muted">Instructions</label>
-        <textarea id="editInstructions" class="form-control bg-light border-0" rows="4"></textarea>
-    </div>
-    <div class="mb-3">
-        <label class="small fw-bold text-muted">Category</label>
-        <select id="editCategory" class="form-select bg-light border-0">
-            <option value="General">General</option>
-            <option value="Report">Report</option>
-            <option value="Document">Document</option>
-            <option value="Project">Project</option>
-            <option value="Meeting">Meeting</option>
-            <option value="Others">Others</option>
-        </select>
-    </div>
-    <div class="mb-3">
-        <label class="small fw-bold text-muted">Priority</label>
-        <select id="editPriority" class="form-select bg-light border-0">
-            <option value="Normal">🟢 Normal</option>
-            <option value="Low">⚪ Low</option>
-            <option value="Medium">🟡 Medium</option>
-            <option value="High">🟠 High</option>
-            <option value="Urgent">🔴 Urgent</option>
-        </select>
-    </div>
-    <div class="mb-3">
-        <label class="small fw-bold text-muted">Deadline</label>
-        <input type="datetime-local" id="editDeadline" class="form-control bg-light border-0">
-    </div>
-    <div class="mb-3">
-        <label class="small fw-bold text-muted">Replace File (Optional)</label>
-        <input type="file" id="editTaskFile" class="form-control bg-light border-0 small">
-    </div>
-    <button onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Task</button>
-</div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="editTaskId">
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Title</label>
+                        <input type="text" id="editTitle" class="form-control bg-light border-0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Instructions</label>
+                        <textarea id="editInstructions" class="form-control bg-light border-0" rows="4"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Category</label>
+                        <select id="editCategory" class="form-select bg-light border-0">
+                            <option value="General">General</option>
+                            <option value="Report">Report</option>
+                            <option value="Document">Document</option>
+                            <option value="Project">Project</option>
+                            <option value="Meeting">Meeting</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Priority</label>
+                        <select id="editPriority" class="form-select bg-light border-0">
+                            <option value="Normal">🟢 Normal</option>
+                            <option value="Low">⚪ Low</option>
+                            <option value="Medium">🟡 Medium</option>
+                            <option value="High">🟠 High</option>
+                            <option value="Urgent">🔴 Urgent</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Deadline</label>
+                        <input type="datetime-local" id="editDeadline" class="form-control bg-light border-0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="small fw-bold text-muted">Replace File (Optional)</label>
+                        <input type="file" id="editTaskFile" class="form-control bg-light border-0 small">
+                    </div>
+                    <button onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Task</button>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Chat Modal -->
     <div class="modal fade" id="chatModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 rounded-4 overflow-hidden">
@@ -214,15 +211,21 @@
     <script>
         const API_URL = "https://taskflow-api.jcpanganiban1.workers.dev";
 
-
-        let session = JSON.parse(localStorage.getItem('office_session')), 
-            globalData = {users:[], tasks:[], comments:[]}, 
-            activeTaskId = null, 
+        let session = JSON.parse(localStorage.getItem('office_session')),
+            globalData = {users:[], tasks:[], comments:[]},
+            activeTaskId = null,
             lastDataHash = "";
 
-        if(!session || session.Role !== "Director") window.location.href = "index.html";
+        if (!session || session.Role !== "Director") window.location.href = "index.html";
 
-        function showLoader(show) { document.getElementById('globalLoader').style.display = show ? 'flex' : 'none'; }
+        function showLoader(show) {
+            document.getElementById('globalLoader').style.display = show ? 'flex' : 'none';
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
 
         async function refresh(isAuto = false) {
             try {
@@ -230,7 +233,8 @@
                 const newData = await res.json();
                 const newHash = JSON.stringify(newData.tasks) + JSON.stringify(newData.comments) + JSON.stringify(newData.users);
                 if (newHash === lastDataHash && isAuto) return;
-                globalData = newData; lastDataHash = newHash;
+                globalData = newData;
+                lastDataHash = newHash;
 
                 document.getElementById('empSelect').innerHTML = globalData.users
                     .filter(u => u.Role !== 'Director')
@@ -240,144 +244,135 @@
                         return `<option value="${u.ID}">${emoji} ${u.Name} - [${status}]</option>`;
                     }).join('');
 
-                renderTasks(globalData.tasks.filter(t=>String(t.Archived).toUpperCase()!=="TRUE"), 'taskTableBody');
-                renderTasks(globalData.tasks.filter(t=>String(t.Archived).toUpperCase()==="TRUE"), 'archiveTableBody', true);
-                if(activeTaskId) renderComments();
-            } catch (e) { console.error("Sync error"); }
+                renderTasks(globalData.tasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE"), 'taskTableBody');
+                renderTasks(globalData.tasks.filter(t => String(t.Archived).toUpperCase() === "TRUE"), 'archiveTableBody', true);
+                if (activeTaskId) renderComments();
+            } catch (e) { console.error("Sync error", e); }
         }
 
-       function renderTasks(tasks, id, isArch = false) {
-    const priorityBadge = {
-        'Urgent': 'danger',
-        'High': 'warning',
-        'Medium': 'info',
-        'Low': 'secondary',
-        'Normal': 'success'
-    };
+        function renderTasks(tasks, id, isArch = false) {
+            const priorityBadge = {
+                'Urgent': 'danger', 'High': 'warning',
+                'Medium': 'info', 'Low': 'secondary', 'Normal': 'success'
+            };
 
-    document.getElementById(id).innerHTML = tasks.reverse().map(t => {
-        const priorityColor = priorityBadge[t.Priority] || 'success';
-        const deadlineHtml = t.Deadline ? `<br><small class="text-danger"><i class="bi bi-clock me-1"></i>Due: ${new Date(t.Deadline).toLocaleString()}</small>` : '';
-        const priorityHtml = t.Priority ? `<span class="badge bg-${priorityColor} bg-opacity-10 text-${priorityColor} border border-${priorityColor} ms-1" style="font-size:0.6rem;">${t.Priority}</span>` : '';
-        const categoryHtml = t.Category ? `<span class="badge bg-light text-dark border ms-1" style="font-size:0.6rem;">${t.Category}</span>` : '';
-        const fileIcon = t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="text-primary ms-2"><i class="bi bi-paperclip"></i></a>` : '';
+            document.getElementById(id).innerHTML = tasks.slice().reverse().map(t => {
+                const priorityColor = priorityBadge[t.Priority] || 'success';
+                const deadlineHtml = t.Deadline ? `<br><small class="text-danger"><i class="bi bi-clock me-1"></i>Due: ${new Date(t.Deadline).toLocaleString()}</small>` : '';
+                const priorityHtml = t.Priority ? `<span class="badge bg-${priorityColor} bg-opacity-10 text-${priorityColor} border border-${priorityColor} ms-1" style="font-size:0.6rem;">${t.Priority}</span>` : '';
+                const categoryHtml = t.Category ? `<span class="badge bg-light text-dark border ms-1" style="font-size:0.6rem;">${t.Category}</span>` : '';
+                const fileIcon = t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="text-primary ms-2"><i class="bi bi-paperclip"></i></a>` : '';
 
-        return `
-        <tr class="border-bottom">
-            <td class="py-3">
-                <b>${t.EmployeeName}</b> ${fileIcon}
-                <br>
-                <small class="text-muted">${t.Title}</small>
-                ${categoryHtml}${priorityHtml}
-                ${deadlineHtml}
-            </td>
-            <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
-            <td class="text-end">
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown">
-                        <i class="bi bi-three-dots-vertical"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                        <li><a class="dropdown-item small" href="#" onclick="openEditModal('${t.TaskID}')"><i class="bi bi-pencil me-2"></i> Edit Task</a></li>
-                        <li><a class="dropdown-item small text-primary" href="#" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots me-2"></i> Chat</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item small" href="#" onclick="toggleArch('${t.TaskID}', ${!isArch})">
-                            <i class="bi bi-${isArch ? 'arrow-up' : 'archive'} me-2"></i> ${isArch ? 'Restore' : 'Archive'}
-                        </a></li>
-                    </ul>
-                </div>
-            </td>
-        </tr>`;
-    }).join('') || '<tr><td colspan="3" class="text-center py-4">No data.</td></tr>';
-}
-     function openEditModal(taskId) {
-    const task = globalData.tasks.find(t => String(t.TaskID) === String(taskId));
-    if(!task) return;
-    document.getElementById('editTaskId').value = task.TaskID;
-    document.getElementById('editTitle').value = task.Title;
-    document.getElementById('editInstructions').value = task.Instructions;
-    document.getElementById('editCategory').value = task.Category || 'General';
-    document.getElementById('editPriority').value = task.Priority || 'Normal';
-    document.getElementById('editDeadline').value = task.Deadline ? task.Deadline.slice(0,16) : '';
-    document.getElementById('editTaskFile').value = "";
-    new bootstrap.Modal(document.getElementById('editModal')).show();
-}
+                return `
+                <tr class="border-bottom">
+                    <td class="py-3">
+                        <b>${t.EmployeeName}</b> ${fileIcon}
+                        <br>
+                        <small class="text-muted">${t.Title}</small>
+                        ${categoryHtml}${priorityHtml}
+                        ${deadlineHtml}
+                    </td>
+                    <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
+                    <td class="text-end">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                <li><a class="dropdown-item small" href="javascript:void(0)" onclick="openEditModal('${t.TaskID}')"><i class="bi bi-pencil me-2"></i> Edit Task</a></li>
+                                <li><a class="dropdown-item small text-primary" href="javascript:void(0)" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots me-2"></i> Chat</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item small" href="javascript:void(0)" onclick="toggleArch('${t.TaskID}', ${!isArch})">
+                                    <i class="bi bi-${isArch ? 'arrow-up' : 'archive'} me-2"></i> ${isArch ? 'Restore' : 'Archive'}
+                                </a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="3" class="text-center py-4">No data.</td></tr>';
+        }
+
+        function openEditModal(taskId) {
+            const task = globalData.tasks.find(t => String(t.TaskID) === String(taskId));
+            if (!task) return;
+            document.getElementById('editTaskId').value = task.TaskID;
+            document.getElementById('editTitle').value = task.Title;
+            document.getElementById('editInstructions').value = task.Instructions;
+            document.getElementById('editCategory').value = task.Category || 'General';
+            document.getElementById('editPriority').value = task.Priority || 'Normal';
+            document.getElementById('editDeadline').value = task.Deadline ? task.Deadline.slice(0, 16) : '';
+            document.getElementById('editTaskFile').value = "";
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        }
 
         async function saveTaskEdit() {
             const taskId = document.getElementById('editTaskId').value;
-            const newTitle = document.getElementById('editTitle').value;
-            const newInstr = document.getElementById('editInstructions').value;
             const fInp = document.getElementById('editTaskFile');
-            
             showLoader(true);
             let fData = null, fName = "";
             if (fInp.files[0]) {
                 fName = fInp.files[0].name;
                 fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
             }
-
-           async function saveTaskEdit() {
-    const taskId = document.getElementById('editTaskId').value;
-    const fInp = document.getElementById('editTaskFile');
-    showLoader(true);
-    let fData = null, fName = "";
-    if (fInp.files[0]) {
-        fName = fInp.files[0].name;
-        fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
-    }
-    await fetch(API_URL, {method:'POST', body: JSON.stringify({
-        action: "EDIT_TASK",
-        taskId,
-        title: document.getElementById('editTitle').value,
-        instructions: document.getElementById('editInstructions').value,
-        priority: document.getElementById('editPriority').value,
-        category: document.getElementById('editCategory').value,
-        deadline: document.getElementById('editDeadline').value,
-        fileData: fData,
-        fileName: fName
-    })});
-    bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
-    await refresh();
-    showLoader(false);
-}
+            await fetch(API_URL, {
+                method: 'POST', body: JSON.stringify({
+                    action: "EDIT_TASK",
+                    taskId,
+                    title: document.getElementById('editTitle').value,
+                    instructions: document.getElementById('editInstructions').value,
+                    priority: document.getElementById('editPriority').value,
+                    category: document.getElementById('editCategory').value,
+                    deadline: document.getElementById('editDeadline').value,
+                    fileData: fData,
+                    fileName: fName
+                })
+            });
+            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+            await refresh();
+            showLoader(false);
+        }
 
         async function createTask() {
-    const empId = document.getElementById('empSelect').value;
-    const selectedEmp = globalData.users.find(u => String(u.ID) === String(empId));
-    const status = selectedEmp ? (selectedEmp.Status || 'Available') : 'Available';
-    if (status !== 'Available') {
-        const proceed = confirm(`⚠️ ATTENTION: ${selectedEmp.Name} is currently "${status}". Proceed anyway?`);
-        if (!proceed) return;
-    }
-    const btn = document.getElementById('createBtn');
-    const fInp = document.getElementById('taskFile');
-    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
-    showLoader(true);
-    let fData = null, fName = "";
-    if (fInp.files[0]) {
-        fName = fInp.files[0].name;
-        fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
-    }
-    await fetch(API_URL, {method:'POST', body: JSON.stringify({
-        action: "CREATE_TASK",
-        empId: empId,
-        empName: selectedEmp.Name,
-        title: document.getElementById('taskTitle').value,
-        instructions: document.getElementById('taskInstructions').value,
-        priority: document.getElementById('taskPriority').value,
-        category: document.getElementById('taskCategory').value,
-        deadline: document.getElementById('taskDeadline').value,
-        fileData: fData,
-        fileName: fName
-    })});
-    btn.disabled = false; btn.innerText = 'Dispatch Task';
-    document.getElementById('taskTitle').value = "";
-    document.getElementById('taskInstructions').value = "";
-    document.getElementById('taskDeadline').value = "";
-    fInp.value = "";
-    showLoader(false);
-    refresh();
-}
+            const empId = document.getElementById('empSelect').value;
+            const selectedEmp = globalData.users.find(u => String(u.ID) === String(empId));
+            const status = selectedEmp ? (selectedEmp.Status || 'Available') : 'Available';
+            if (status !== 'Available') {
+                const proceed = confirm(`⚠️ ATTENTION: ${selectedEmp.Name} is currently "${status}". Proceed anyway?`);
+                if (!proceed) return;
+            }
+            const btn = document.getElementById('createBtn');
+            const fInp = document.getElementById('taskFile');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
+            showLoader(true);
+            let fData = null, fName = "";
+            if (fInp.files[0]) {
+                fName = fInp.files[0].name;
+                fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
+            }
+            await fetch(API_URL, {
+                method: 'POST', body: JSON.stringify({
+                    action: "CREATE_TASK",
+                    empId: empId,
+                    empName: selectedEmp.Name,
+                    title: document.getElementById('taskTitle').value,
+                    instructions: document.getElementById('taskInstructions').value,
+                    priority: document.getElementById('taskPriority').value,
+                    category: document.getElementById('taskCategory').value,
+                    deadline: document.getElementById('taskDeadline').value,
+                    fileData: fData,
+                    fileName: fName
+                })
+            });
+            btn.disabled = false;
+            btn.innerText = 'Dispatch Task';
+            document.getElementById('taskTitle').value = "";
+            document.getElementById('taskInstructions').value = "";
+            document.getElementById('taskDeadline').value = "";
+            fInp.value = "";
+            showLoader(false);
+            refresh();
+        }
 
         function openChat(taskId, title) {
             activeTaskId = taskId;
@@ -399,29 +394,35 @@
                         <button id="sendBtn" class="btn btn-primary rounded-circle ms-2" onclick="sendMsg()"><i class="bi bi-send-fill"></i></button>
                     </div>
                 </div>`;
-            const s = document.getElementById('chatScroll'); if(s) s.scrollTop = s.scrollHeight;
+            const s = document.getElementById('chatScroll');
+            if (s) s.scrollTop = s.scrollHeight;
         }
 
         async function sendMsg() {
-            const inp = document.getElementById('chatInp'); if(!inp.value.trim()) return;
+            const inp = document.getElementById('chatInp');
+            if (!inp.value.trim()) return;
             const btn = document.getElementById('sendBtn');
-            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
-            await fetch(API_URL, {method:'POST', body: JSON.stringify({action:"ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value})});
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value }) });
             await refresh();
-            inp.value = ""; btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>';
+            inp.value = "";
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send-fill"></i>';
         }
 
-        async function toggleArch(taskId, val) { 
+        async function toggleArch(taskId, val) {
             showLoader(true);
-            await fetch(API_URL, {method:'POST', body: JSON.stringify({action:"TOGGLE_ARCHIVE", taskId, archived: val})}); 
-            await refresh(); showLoader(false);
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "TOGGLE_ARCHIVE", taskId, archived: val }) });
+            await refresh();
+            showLoader(false);
         }
 
-  function logout() { 
-    localStorage.clear(); 
-    window.location.href = "index.html"; 
-}
-        window.onload = () => { if(session) document.getElementById('dirNameDisplay').innerText = session.Name; refresh(); };
+        window.onload = () => {
+            if (session) document.getElementById('dirNameDisplay').innerText = session.Name;
+            refresh();
+        };
+
         setInterval(() => refresh(true), 15000);
     </script>
 </body>
