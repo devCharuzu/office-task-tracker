@@ -37,7 +37,7 @@
             display: flex;
             flex-direction: column;
         }
-        .chat-spacer { flex: 1 1 auto; }
+
         .msg-bubble { padding: 10px 16px; border-radius: 18px; font-size: 0.9rem; max-width: 85%; margin-bottom: 8px; word-break: break-word; flex-shrink: 0; }
         .own { align-self: flex-end; background: var(--messenger-blue); color: white; border-bottom-right-radius: 4px; }
         .theirs { align-self: flex-start; background: white; color: black; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
@@ -509,7 +509,6 @@
 
         container.innerHTML = `
             <div class="chat-container" id="chatScroll">
-                <div class="chat-spacer"></div>
                 ${bubbles}
             </div>
             <div class="chat-input-bar">
@@ -522,8 +521,7 @@
                 </div>
             </div>`;
 
-        scrollToBottom();
-    }
+}
 
     async function sendMsg() {
         const inp = document.getElementById('chatInp');
