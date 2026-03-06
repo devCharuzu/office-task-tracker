@@ -81,15 +81,40 @@
         <div class="row g-4">
             <div class="col-xl-4 col-lg-5">
                 <div class="card card-custom border-top border-primary border-4 shadow-sm">
-                    <h6 class="fw-bold mb-4">Create Assignment</h6>
-                    <label class="small fw-bold text-muted mb-1">Select Employee</label>
-                    <select id="empSelect" class="form-select mb-3 bg-light border-0 py-2"></select>
-                    <input type="text" id="taskTitle" class="form-control mb-3 bg-light border-0" placeholder="Task Title">
-                    <textarea id="taskInstructions" class="form-control mb-3 bg-light border-0" rows="3" placeholder="Instructions..."></textarea>
-                    <label class="small fw-bold text-muted mb-1">Attachment (Optional)</label>
-                    <input type="file" id="taskFile" class="form-control mb-4 bg-light border-0 small">
-                    <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold shadow-sm">Dispatch Task</button>
-                </div>
+    <h6 class="fw-bold mb-4">Create Assignment</h6>
+    <label class="small fw-bold text-muted mb-1">Select Employee</label>
+    <select id="empSelect" class="form-select mb-3 bg-light border-0 py-2"></select>
+    
+    <input type="text" id="taskTitle" class="form-control mb-3 bg-light border-0" placeholder="Task Title">
+    <textarea id="taskInstructions" class="form-control mb-3 bg-light border-0" rows="3" placeholder="Instructions..."></textarea>
+    
+    <label class="small fw-bold text-muted mb-1">Category</label>
+    <select id="taskCategory" class="form-select mb-3 bg-light border-0">
+        <option value="General">General</option>
+        <option value="Report">Report</option>
+        <option value="Document">Document</option>
+        <option value="Project">Project</option>
+        <option value="Meeting">Meeting</option>
+        <option value="Others">Others</option>
+    </select>
+
+    <label class="small fw-bold text-muted mb-1">Priority</label>
+    <select id="taskPriority" class="form-select mb-3 bg-light border-0">
+        <option value="Normal">🟢 Normal</option>
+        <option value="Low">⚪ Low</option>
+        <option value="Medium">🟡 Medium</option>
+        <option value="High">🟠 High</option>
+        <option value="Urgent">🔴 Urgent</option>
+    </select>
+
+    <label class="small fw-bold text-muted mb-1">Deadline</label>
+    <input type="datetime-local" id="taskDeadline" class="form-control mb-4 bg-light border-0">
+
+    <label class="small fw-bold text-muted mb-1">Attachment (Optional)</label>
+    <input type="file" id="taskFile" class="form-control mb-4 bg-light border-0 small">
+    
+    <button onclick="createTask()" id="createBtn" class="btn btn-dark w-100 rounded-pill py-2 fw-bold shadow-sm">Dispatch Task</button>
+</div>
             </div>
 
             <div class="col-xl-8 col-lg-7">
@@ -128,22 +153,47 @@
                     <h6 class="fw-bold m-0">Edit Assignment</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <input type="hidden" id="editTaskId">
-                    <div class="mb-3">
-                        <label class="small fw-bold text-muted">Title</label>
-                        <input type="text" id="editTitle" class="form-control bg-light border-0">
-                    </div>
-                    <div class="mb-3">
-                        <label class="small fw-bold text-muted">Instructions</label>
-                        <textarea id="editInstructions" class="form-control bg-light border-0" rows="4"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="small fw-bold text-muted">Replace File (Optional)</label>
-                        <input type="file" id="editTaskFile" class="form-control bg-light border-0 small">
-                    </div>
-                    <button onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Task</button>
-                </div>
+             <div class="modal-body p-4">
+    <input type="hidden" id="editTaskId">
+    <div class="mb-3">
+        <label class="small fw-bold text-muted">Title</label>
+        <input type="text" id="editTitle" class="form-control bg-light border-0">
+    </div>
+    <div class="mb-3">
+        <label class="small fw-bold text-muted">Instructions</label>
+        <textarea id="editInstructions" class="form-control bg-light border-0" rows="4"></textarea>
+    </div>
+    <div class="mb-3">
+        <label class="small fw-bold text-muted">Category</label>
+        <select id="editCategory" class="form-select bg-light border-0">
+            <option value="General">General</option>
+            <option value="Report">Report</option>
+            <option value="Document">Document</option>
+            <option value="Project">Project</option>
+            <option value="Meeting">Meeting</option>
+            <option value="Others">Others</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="small fw-bold text-muted">Priority</label>
+        <select id="editPriority" class="form-select bg-light border-0">
+            <option value="Normal">🟢 Normal</option>
+            <option value="Low">⚪ Low</option>
+            <option value="Medium">🟡 Medium</option>
+            <option value="High">🟠 High</option>
+            <option value="Urgent">🔴 Urgent</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="small fw-bold text-muted">Deadline</label>
+        <input type="datetime-local" id="editDeadline" class="form-control bg-light border-0">
+    </div>
+    <div class="mb-3">
+        <label class="small fw-bold text-muted">Replace File (Optional)</label>
+        <input type="file" id="editTaskFile" class="form-control bg-light border-0 small">
+    </div>
+    <button onclick="saveTaskEdit()" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">Update Task</button>
+</div>
             </div>
         </div>
     </div>
@@ -222,15 +272,18 @@
             }).join('') || '<tr><td colspan="3" class="text-center py-4">No data.</td></tr>';
         }
 
-        function openEditModal(taskId) {
-            const task = globalData.tasks.find(t => String(t.TaskID) === String(taskId));
-            if(!task) return;
-            document.getElementById('editTaskId').value = task.TaskID;
-            document.getElementById('editTitle').value = task.Title;
-            document.getElementById('editInstructions').value = task.Instructions;
-            document.getElementById('editTaskFile').value = "";
-            new bootstrap.Modal(document.getElementById('editModal')).show();
-        }
+     function openEditModal(taskId) {
+    const task = globalData.tasks.find(t => String(t.TaskID) === String(taskId));
+    if(!task) return;
+    document.getElementById('editTaskId').value = task.TaskID;
+    document.getElementById('editTitle').value = task.Title;
+    document.getElementById('editInstructions').value = task.Instructions;
+    document.getElementById('editCategory').value = task.Category || 'General';
+    document.getElementById('editPriority').value = task.Priority || 'Normal';
+    document.getElementById('editDeadline').value = task.Deadline ? task.Deadline.slice(0,16) : '';
+    document.getElementById('editTaskFile').value = "";
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+}
 
         async function saveTaskEdit() {
             const taskId = document.getElementById('editTaskId').value;
@@ -245,46 +298,68 @@
                 fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
             }
 
-            await fetch(API_URL, {method:'POST', body: JSON.stringify({
-                action: "EDIT_TASK", 
-                taskId, 
-                title: newTitle, 
-                instructions: newInstr,
-                fileData: fData,
-                fileName: fName
-            })});
-            
-            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
-            await refresh();
-            showLoader(false);
-        }
+           async function saveTaskEdit() {
+    const taskId = document.getElementById('editTaskId').value;
+    const fInp = document.getElementById('editTaskFile');
+    showLoader(true);
+    let fData = null, fName = "";
+    if (fInp.files[0]) {
+        fName = fInp.files[0].name;
+        fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
+    }
+    await fetch(API_URL, {method:'POST', body: JSON.stringify({
+        action: "EDIT_TASK",
+        taskId,
+        title: document.getElementById('editTitle').value,
+        instructions: document.getElementById('editInstructions').value,
+        priority: document.getElementById('editPriority').value,
+        category: document.getElementById('editCategory').value,
+        deadline: document.getElementById('editDeadline').value,
+        fileData: fData,
+        fileName: fName
+    })});
+    bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+    await refresh();
+    showLoader(false);
+}
 
         async function createTask() {
-            const empId = document.getElementById('empSelect').value;
-            const selectedEmp = globalData.users.find(u => String(u.ID) === String(empId));
-            const status = selectedEmp ? (selectedEmp.Status || 'Available') : 'Available';
-            if (status !== 'Available') {
-                const proceed = confirm(`⚠️ ATTENTION: ${selectedEmp.Name} is currently "${status}". Proceed anyway?`);
-                if (!proceed) return;
-            }
-            const btn = document.getElementById('createBtn');
-            const fInp = document.getElementById('taskFile');
-            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
-            showLoader(true);
-            let fData = null, fName = "";
-            if (fInp.files[0]) {
-                fName = fInp.files[0].name;
-                fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
-            }
-            await fetch(API_URL, {method:'POST', body: JSON.stringify({
-                action: "CREATE_TASK", empId: empId, empName: selectedEmp.Name,
-                title: document.getElementById('taskTitle').value, instructions: document.getElementById('taskInstructions').value,
-                fileData: fData, fileName: fName
-            })});
-            btn.disabled = false; btn.innerText = 'Dispatch Task';
-            document.getElementById('taskTitle').value = ""; document.getElementById('taskInstructions').value = "";
-            fInp.value = ""; showLoader(false); refresh();
-        }
+    const empId = document.getElementById('empSelect').value;
+    const selectedEmp = globalData.users.find(u => String(u.ID) === String(empId));
+    const status = selectedEmp ? (selectedEmp.Status || 'Available') : 'Available';
+    if (status !== 'Available') {
+        const proceed = confirm(`⚠️ ATTENTION: ${selectedEmp.Name} is currently "${status}". Proceed anyway?`);
+        if (!proceed) return;
+    }
+    const btn = document.getElementById('createBtn');
+    const fInp = document.getElementById('taskFile');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
+    showLoader(true);
+    let fData = null, fName = "";
+    if (fInp.files[0]) {
+        fName = fInp.files[0].name;
+        fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
+    }
+    await fetch(API_URL, {method:'POST', body: JSON.stringify({
+        action: "CREATE_TASK",
+        empId: empId,
+        empName: selectedEmp.Name,
+        title: document.getElementById('taskTitle').value,
+        instructions: document.getElementById('taskInstructions').value,
+        priority: document.getElementById('taskPriority').value,
+        category: document.getElementById('taskCategory').value,
+        deadline: document.getElementById('taskDeadline').value,
+        fileData: fData,
+        fileName: fName
+    })});
+    btn.disabled = false; btn.innerText = 'Dispatch Task';
+    document.getElementById('taskTitle').value = "";
+    document.getElementById('taskInstructions').value = "";
+    document.getElementById('taskDeadline').value = "";
+    fInp.value = "";
+    showLoader(false);
+    refresh();
+}
 
         function openChat(taskId, title) {
             activeTaskId = taskId;
