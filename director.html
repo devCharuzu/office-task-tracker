@@ -44,7 +44,7 @@
             font-weight: 700;
         }
         .notif-dropdown {
-            position: absolute; right: 0; top: 40px;
+            position: absolute; left: 0; top: 40px;
             width: 320px; background: white; border-radius: 16px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.15); z-index: 9000;
             display: none; overflow: hidden;
@@ -91,28 +91,31 @@
         <p class="mt-3 fw-bold text-primary">Syncing...</p>
     </div>
 
+    <!-- Toast Container -->
     <div class="toast-container-custom" id="toastContainer"></div>
 
     <aside class="sidebar">
-        <div class="fw-bold fs-5 mb-4 text-primary"><i class="bi bi-shield-lock-fill"></i> Director Panel</div>
+        <div class="fw-bold fs-5 mb-5 text-primary"><i class="bi bi-shield-lock-fill"></i> Director Panel</div>
         <div class="text-center mb-4">
             <img id="dirPic" src="https://ui-avatars.com/api/?background=random" class="rounded-circle mb-2 border shadow-sm" style="width:80px;height:80px;">
             <h6 id="dirNameDisplay" class="fw-bold m-0">---</h6>
         </div>
-        <div class="d-flex align-items-center justify-content-between mb-3 px-1">
-            <span class="small text-muted fw-bold">NOTIFICATIONS</span>
+
+        <!-- Notification Bell in Sidebar -->
+        <div class="d-flex justify-content-center mb-4">
             <div class="notif-bell" onclick="toggleNotifDropdown()">
-                <i class="bi bi-bell-fill text-secondary"></i>
+                <i class="bi bi-bell-fill fs-5 text-secondary"></i>
                 <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
                 <div class="notif-dropdown" id="notifDropdown">
                     <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
                         <span class="fw-bold small">Notifications</span>
-                        <span class="text-primary small" style="cursor:pointer;" onclick="markAllRead()">Mark all read</span>
+                        <span class="text-primary small" style="cursor:pointer;" onclick="markAllRead(event)">Mark all read</span>
                     </div>
                     <div id="notifList" style="max-height:300px; overflow-y:auto;"></div>
                 </div>
             </div>
         </div>
+
         <nav class="nav flex-column gap-2">
             <a class="nav-link text-dark fw-bold bg-light rounded-3" href="#"><i class="bi bi-speedometer2 me-2"></i> Monitor</a>
             <a class="nav-link text-muted" href="#" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive me-2"></i> Archive</a>
@@ -331,14 +334,15 @@
             toast.innerHTML = `
                 <i class="bi bi-${type === 'chat' ? 'chat-fill text-primary' : 'clipboard-check-fill text-success'} fs-5"></i>
                 <div>
-                    <div class="fw-bold" style="font-size:0.8rem;">${type === 'chat' ? 'New Message' : 'New Task Update'}</div>
+                    <div class="fw-bold" style="font-size:0.8rem;">${type === 'chat' ? 'New Message' : 'New Task'}</div>
                     <div style="font-size:0.78rem; color:#6b7280;">${message}</div>
                 </div>`;
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 5000);
         }
 
-        async function markAllRead() {
+        async function markAllRead(e) {
+            if (e) e.stopPropagation();
             await fetch(API_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action: "MARK_NOTIFICATIONS_READ", userId: session.ID })
@@ -374,10 +378,7 @@
 
         // --- RENDER TASKS ---
         function renderTasks(tasks, id, isArch = false) {
-            const priorityBadge = {
-                'Urgent': 'danger', 'High': 'warning',
-                'Medium': 'info', 'Low': 'secondary', 'Normal': 'success'
-            };
+            const priorityBadge = { 'Urgent': 'danger', 'High': 'warning', 'Medium': 'info', 'Low': 'secondary', 'Normal': 'success' };
             document.getElementById(id).innerHTML = tasks.slice().reverse().map(t => {
                 const priorityColor = priorityBadge[t.Priority] || 'success';
                 const deadlineHtml = t.Deadline ? `<br><small class="text-danger"><i class="bi bi-clock me-1"></i>Due: ${new Date(t.Deadline).toLocaleString()}</small>` : '';
@@ -394,9 +395,7 @@
                     <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
                     <td class="text-end">
                         <div class="dropdown">
-                            <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown">
-                                <i class="bi bi-three-dots-vertical"></i>
-                            </button>
+                            <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
                                 <li><a class="dropdown-item small" href="javascript:void(0)" onclick="openEditModal('${t.TaskID}')"><i class="bi bi-pencil me-2"></i> Edit Task</a></li>
                                 <li><a class="dropdown-item small text-primary" href="javascript:void(0)" onclick="openChat('${t.TaskID}', '${t.Title}')"><i class="bi bi-chat-dots me-2"></i> Chat</a></li>
@@ -434,17 +433,15 @@
                 fName = fInp.files[0].name;
                 fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
             }
-            await fetch(API_URL, {
-                method: 'POST', body: JSON.stringify({
-                    action: "EDIT_TASK", taskId,
-                    title: document.getElementById('editTitle').value,
-                    instructions: document.getElementById('editInstructions').value,
-                    priority: document.getElementById('editPriority').value,
-                    category: document.getElementById('editCategory').value,
-                    deadline: document.getElementById('editDeadline').value,
-                    fileData: fData, fileName: fName
-                })
-            });
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({
+                action: "EDIT_TASK", taskId,
+                title: document.getElementById('editTitle').value,
+                instructions: document.getElementById('editInstructions').value,
+                priority: document.getElementById('editPriority').value,
+                category: document.getElementById('editCategory').value,
+                deadline: document.getElementById('editDeadline').value,
+                fileData: fData, fileName: fName
+            })});
             bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
             await refresh();
             showLoader(false);
@@ -456,30 +453,26 @@
             const selectedEmp = globalData.users.find(u => String(u.ID) === String(empId));
             const status = selectedEmp ? (selectedEmp.Status || 'Available') : 'Available';
             if (status !== 'Available') {
-                const proceed = confirm(`⚠️ ATTENTION: ${selectedEmp.Name} is currently "${status}". Proceed anyway?`);
-                if (!proceed) return;
+                if (!confirm(`⚠️ ATTENTION: ${selectedEmp.Name} is currently "${status}". Proceed anyway?`)) return;
             }
             const btn = document.getElementById('createBtn');
             const fInp = document.getElementById('taskFile');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
+            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span> Dispatching...';
             showLoader(true);
             let fData = null, fName = "";
             if (fInp.files[0]) {
                 fName = fInp.files[0].name;
                 fData = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result.split(',')[1]); rd.readAsDataURL(fInp.files[0]); });
             }
-            await fetch(API_URL, {
-                method: 'POST', body: JSON.stringify({
-                    action: "CREATE_TASK", empId, empName: selectedEmp.Name,
-                    title: document.getElementById('taskTitle').value,
-                    instructions: document.getElementById('taskInstructions').value,
-                    priority: document.getElementById('taskPriority').value,
-                    category: document.getElementById('taskCategory').value,
-                    deadline: document.getElementById('taskDeadline').value,
-                    fileData: fData, fileName: fName
-                })
-            });
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({
+                action: "CREATE_TASK", empId, empName: selectedEmp.Name,
+                title: document.getElementById('taskTitle').value,
+                instructions: document.getElementById('taskInstructions').value,
+                priority: document.getElementById('taskPriority').value,
+                category: document.getElementById('taskCategory').value,
+                deadline: document.getElementById('taskDeadline').value,
+                fileData: fData, fileName: fName
+            })});
             btn.disabled = false; btn.innerText = 'Dispatch Task';
             document.getElementById('taskTitle').value = "";
             document.getElementById('taskInstructions').value = "";
@@ -518,13 +511,10 @@
             const inp = document.getElementById('chatInp');
             if (!inp.value.trim()) return;
             const btn = document.getElementById('sendBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
+            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
             await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value }) });
             await refresh();
-            inp.value = "";
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-send-fill"></i>';
+            inp.value = ""; btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>';
         }
 
         async function toggleArch(taskId, val) {
@@ -535,7 +525,10 @@
         }
 
         window.onload = () => {
-            if (session) document.getElementById('dirNameDisplay').innerText = session.Name;
+            if (session) {
+                document.getElementById('dirNameDisplay').innerText = session.Name;
+                document.getElementById('dirPic').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(session.Name)}&background=random`;
+            }
             refresh();
         };
 
