@@ -19,7 +19,6 @@
 
         .sidebar { background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; width: var(--sidebar-width); z-index: 1000; padding: 30px; }
         .main-content { margin-left: var(--sidebar-width); padding: 40px; min-height: 100vh; transition: 0.3s; }
-
         .mobile-nav { display: none; }
 
         .card-custom { border: none; border-radius: 20px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 20px; }
@@ -34,6 +33,40 @@
         .own { align-self: flex-end; background: var(--messenger-blue); color: white; border-bottom-right-radius: 4px; }
         .theirs { align-self: flex-start; background: white; color: black; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .spinner-btn { width: 1rem; height: 1rem; border-width: 0.15em; }
+
+        /* Notification Bell */
+        .notif-bell { position: relative; cursor: pointer; }
+        .notif-badge {
+            position: absolute; top: -5px; right: -5px;
+            background: #ef4444; color: white; border-radius: 50%;
+            width: 18px; height: 18px; font-size: 0.6rem;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700;
+        }
+        .notif-dropdown {
+            position: absolute; right: 0; top: 40px;
+            width: 320px; background: white; border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15); z-index: 9000;
+            display: none; overflow: hidden;
+        }
+        .notif-dropdown.show { display: block; }
+        .notif-item { padding: 12px 16px; border-bottom: 1px solid #f3f4f6; font-size: 0.82rem; cursor: pointer; transition: 0.2s; }
+        .notif-item:hover { background: #f9fafb; }
+        .notif-item.unread { background: #eff6ff; border-left: 3px solid #3b82f6; }
+        .notif-time { font-size: 0.7rem; color: #9ca3af; margin-top: 2px; }
+
+        /* Toast */
+        .toast-container-custom { position: fixed; bottom: 30px; right: 20px; z-index: 9999; }
+        .toast-notif {
+            background: white; border-radius: 14px; padding: 14px 18px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12); margin-top: 10px;
+            display: flex; align-items: flex-start; gap: 12px;
+            animation: slideIn 0.3s ease; max-width: 300px;
+            border-left: 4px solid #3b82f6;
+        }
+        .toast-notif.task { border-left-color: #8b5cf6; }
+        .toast-notif.chat { border-left-color: #0084ff; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
         @media (max-width: 767px) {
             .sidebar { display: none !important; }
@@ -58,11 +91,27 @@
         <p class="mt-3 fw-bold text-primary">Syncing...</p>
     </div>
 
+    <div class="toast-container-custom" id="toastContainer"></div>
+
     <aside class="sidebar">
-        <div class="fw-bold fs-5 mb-5 text-primary"><i class="bi bi-shield-lock-fill"></i> Director Panel</div>
-        <div class="text-center mb-5">
+        <div class="fw-bold fs-5 mb-4 text-primary"><i class="bi bi-shield-lock-fill"></i> Director Panel</div>
+        <div class="text-center mb-4">
             <img id="dirPic" src="https://ui-avatars.com/api/?background=random" class="rounded-circle mb-2 border shadow-sm" style="width:80px;height:80px;">
             <h6 id="dirNameDisplay" class="fw-bold m-0">---</h6>
+        </div>
+        <div class="d-flex align-items-center justify-content-between mb-3 px-1">
+            <span class="small text-muted fw-bold">NOTIFICATIONS</span>
+            <div class="notif-bell" onclick="toggleNotifDropdown()">
+                <i class="bi bi-bell-fill text-secondary"></i>
+                <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+                        <span class="fw-bold small">Notifications</span>
+                        <span class="text-primary small" style="cursor:pointer;" onclick="markAllRead()">Mark all read</span>
+                    </div>
+                    <div id="notifList" style="max-height:300px; overflow-y:auto;"></div>
+                </div>
+            </div>
         </div>
         <nav class="nav flex-column gap-2">
             <a class="nav-link text-dark fw-bold bg-light rounded-3" href="#"><i class="bi bi-speedometer2 me-2"></i> Monitor</a>
@@ -74,6 +123,11 @@
     <div class="mobile-nav">
         <a href="#" class="active"><i class="bi bi-speedometer2"></i><div style="font-size: 10px;">Monitor</div></a>
         <a href="#" data-bs-toggle="modal" data-bs-target="#archiveModal"><i class="bi bi-archive"></i><div style="font-size: 10px;">Archive</div></a>
+        <div class="notif-bell" onclick="toggleNotifDropdown()" style="flex:1; text-align:center; color:#6b7280;">
+            <i class="bi bi-bell-fill" style="font-size:1.2rem;"></i>
+            <div style="font-size:10px;">Alerts</div>
+            <span class="notif-badge" id="notifBadgeMobile" style="display:none;">0</span>
+        </div>
         <a href="javascript:void(0)" onclick="logout()" class="text-danger"><i class="bi bi-box-arrow-left"></i><div style="font-size: 10px;">Logout</div></a>
     </div>
 
@@ -212,9 +266,10 @@
         const API_URL = "https://taskflow-api.jcpanganiban1.workers.dev";
 
         let session = JSON.parse(localStorage.getItem('office_session')),
-            globalData = {users:[], tasks:[], comments:[]},
+            globalData = { users: [], tasks: [], comments: [], notifications: [] },
             activeTaskId = null,
-            lastDataHash = "";
+            lastDataHash = "",
+            lastNotifCount = 0;
 
         if (!session || session.Role !== "Director") window.location.href = "index.html";
 
@@ -227,11 +282,77 @@
             window.location.href = "index.html";
         }
 
+        // --- NOTIFICATIONS ---
+        function toggleNotifDropdown() {
+            document.getElementById('notifDropdown').classList.toggle('show');
+        }
+
+        document.addEventListener('click', function(e) {
+            const bell = document.querySelector('.notif-bell');
+            if (bell && !bell.contains(e.target)) {
+                const dd = document.getElementById('notifDropdown');
+                if (dd) dd.classList.remove('show');
+            }
+        });
+
+        function renderNotifications(notifications) {
+            const unread = notifications.filter(n => n.IsRead === 'FALSE');
+            const badge = document.getElementById('notifBadge');
+            const badgeMobile = document.getElementById('notifBadgeMobile');
+            const label = unread.length > 9 ? '9+' : unread.length;
+
+            if (unread.length > 0) {
+                badge.style.display = 'flex'; badge.innerText = label;
+                badgeMobile.style.display = 'flex'; badgeMobile.innerText = label;
+            } else {
+                badge.style.display = 'none';
+                badgeMobile.style.display = 'none';
+            }
+
+            if (lastNotifCount > 0 && unread.length > lastNotifCount) {
+                showToast(notifications[0].Message, notifications[0].Type);
+            }
+            lastNotifCount = unread.length;
+
+            const list = document.getElementById('notifList');
+            list.innerHTML = notifications.length === 0
+                ? '<div class="text-center text-muted small py-4">No notifications yet</div>'
+                : notifications.map(n => `
+                    <div class="notif-item ${n.IsRead === 'FALSE' ? 'unread' : ''}">
+                        <div>${n.Message}</div>
+                        <div class="notif-time">${new Date(n.CreatedAt).toLocaleString()}</div>
+                    </div>`).join('');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast-notif ${type}`;
+            toast.innerHTML = `
+                <i class="bi bi-${type === 'chat' ? 'chat-fill text-primary' : 'clipboard-check-fill text-success'} fs-5"></i>
+                <div>
+                    <div class="fw-bold" style="font-size:0.8rem;">${type === 'chat' ? 'New Message' : 'New Task Update'}</div>
+                    <div style="font-size:0.78rem; color:#6b7280;">${message}</div>
+                </div>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        async function markAllRead() {
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: "MARK_NOTIFICATIONS_READ", userId: session.ID })
+            });
+            await refresh();
+            document.getElementById('notifDropdown').classList.remove('show');
+        }
+
+        // --- REFRESH ---
         async function refresh(isAuto = false) {
             try {
-                const res = await fetch(API_URL);
+                const res = await fetch(`${API_URL}?userId=${session.ID}`);
                 const newData = await res.json();
-                const newHash = JSON.stringify(newData.tasks) + JSON.stringify(newData.comments) + JSON.stringify(newData.users);
+                const newHash = JSON.stringify(newData.tasks) + JSON.stringify(newData.comments) + JSON.stringify(newData.users) + JSON.stringify(newData.notifications);
                 if (newHash === lastDataHash && isAuto) return;
                 globalData = newData;
                 lastDataHash = newHash;
@@ -246,31 +367,29 @@
 
                 renderTasks(globalData.tasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE"), 'taskTableBody');
                 renderTasks(globalData.tasks.filter(t => String(t.Archived).toUpperCase() === "TRUE"), 'archiveTableBody', true);
+                renderNotifications(newData.notifications || []);
                 if (activeTaskId) renderComments();
             } catch (e) { console.error("Sync error", e); }
         }
 
+        // --- RENDER TASKS ---
         function renderTasks(tasks, id, isArch = false) {
             const priorityBadge = {
                 'Urgent': 'danger', 'High': 'warning',
                 'Medium': 'info', 'Low': 'secondary', 'Normal': 'success'
             };
-
             document.getElementById(id).innerHTML = tasks.slice().reverse().map(t => {
                 const priorityColor = priorityBadge[t.Priority] || 'success';
                 const deadlineHtml = t.Deadline ? `<br><small class="text-danger"><i class="bi bi-clock me-1"></i>Due: ${new Date(t.Deadline).toLocaleString()}</small>` : '';
                 const priorityHtml = t.Priority ? `<span class="badge bg-${priorityColor} bg-opacity-10 text-${priorityColor} border border-${priorityColor} ms-1" style="font-size:0.6rem;">${t.Priority}</span>` : '';
                 const categoryHtml = t.Category ? `<span class="badge bg-light text-dark border ms-1" style="font-size:0.6rem;">${t.Category}</span>` : '';
                 const fileIcon = t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="text-primary ms-2"><i class="bi bi-paperclip"></i></a>` : '';
-
                 return `
                 <tr class="border-bottom">
                     <td class="py-3">
-                        <b>${t.EmployeeName}</b> ${fileIcon}
-                        <br>
+                        <b>${t.EmployeeName}</b> ${fileIcon}<br>
                         <small class="text-muted">${t.Title}</small>
-                        ${categoryHtml}${priorityHtml}
-                        ${deadlineHtml}
+                        ${categoryHtml}${priorityHtml}${deadlineHtml}
                     </td>
                     <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
                     <td class="text-end">
@@ -292,6 +411,7 @@
             }).join('') || '<tr><td colspan="3" class="text-center py-4">No data.</td></tr>';
         }
 
+        // --- EDIT TASK ---
         function openEditModal(taskId) {
             const task = globalData.tasks.find(t => String(t.TaskID) === String(taskId));
             if (!task) return;
@@ -316,15 +436,13 @@
             }
             await fetch(API_URL, {
                 method: 'POST', body: JSON.stringify({
-                    action: "EDIT_TASK",
-                    taskId,
+                    action: "EDIT_TASK", taskId,
                     title: document.getElementById('editTitle').value,
                     instructions: document.getElementById('editInstructions').value,
                     priority: document.getElementById('editPriority').value,
                     category: document.getElementById('editCategory').value,
                     deadline: document.getElementById('editDeadline').value,
-                    fileData: fData,
-                    fileName: fName
+                    fileData: fData, fileName: fName
                 })
             });
             bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
@@ -332,6 +450,7 @@
             showLoader(false);
         }
 
+        // --- CREATE TASK ---
         async function createTask() {
             const empId = document.getElementById('empSelect').value;
             const selectedEmp = globalData.users.find(u => String(u.ID) === String(empId));
@@ -352,20 +471,16 @@
             }
             await fetch(API_URL, {
                 method: 'POST', body: JSON.stringify({
-                    action: "CREATE_TASK",
-                    empId: empId,
-                    empName: selectedEmp.Name,
+                    action: "CREATE_TASK", empId, empName: selectedEmp.Name,
                     title: document.getElementById('taskTitle').value,
                     instructions: document.getElementById('taskInstructions').value,
                     priority: document.getElementById('taskPriority').value,
                     category: document.getElementById('taskCategory').value,
                     deadline: document.getElementById('taskDeadline').value,
-                    fileData: fData,
-                    fileName: fName
+                    fileData: fData, fileName: fName
                 })
             });
-            btn.disabled = false;
-            btn.innerText = 'Dispatch Task';
+            btn.disabled = false; btn.innerText = 'Dispatch Task';
             document.getElementById('taskTitle').value = "";
             document.getElementById('taskInstructions').value = "";
             document.getElementById('taskDeadline').value = "";
@@ -374,6 +489,7 @@
             refresh();
         }
 
+        // --- CHAT ---
         function openChat(taskId, title) {
             activeTaskId = taskId;
             document.getElementById('chatTaskTitle').innerText = title;
