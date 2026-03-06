@@ -413,12 +413,14 @@ function renderComments() {
     const comments  = globalData.comments.filter(c =>
         String(c.TaskID) === String(activeTaskId) &&
         !String(c.HiddenBy || '').includes(session.ID)
-    ).slice().reverse();
+    );
 
     const bubbles = comments.length
-        ? comments.map(c =>
-            `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`
-          ).join('')
+        ? comments.map(c => {
+            const time = c.TimeStamp ? new Date(c.TimeStamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+            const side = c.SenderName === session.Name ? 'own' : 'theirs';
+            return `<div class="msg-bubble ${side}">${c.Message}<div style="font-size:0.65rem;opacity:0.7;margin-top:4px;text-align:${side === 'own' ? 'right' : 'left'}">${time}</div></div>`;
+          }).join('')
         : '<div class="text-center text-muted small py-3">Start the conversation...</div>';
 
     container.innerHTML = `
