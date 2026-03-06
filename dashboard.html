@@ -17,10 +17,11 @@
             flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
         }
 
-        .task-card { background: white; border: none; border-radius: 20px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .task-card { background: white; border: none; border-radius: 20px; padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .status-pill { font-size: 0.7rem; padding: 5px 12px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
-        .status-assigned { background: #fff7ed; color: #c2410c; }
-        .status-received { background: #eff6ff; color: #1d4ed8; }
+        .status-assigned  { background: #fff7ed; color: #c2410c; }
+        .status-received  { background: #eff6ff; color: #1d4ed8; }
         .status-completed { background: #f0fdf4; color: #15803d; }
 
         .presence-select {
@@ -30,36 +31,43 @@
         }
         .presence-select:hover { transform: scale(1.02); }
         .spinner-btn { width: 1rem; height: 1rem; border-width: 0.15em; }
-        .mobile-nav { position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-around; padding: 12px 0; z-index: 1000; }
 
-        /* ── CHAT FIX ── */
+        .mobile-nav {
+            position: fixed; bottom: 0; width: 100%; background: white;
+            border-top: 1px solid #e5e7eb; display: flex;
+            justify-content: space-around; padding: 12px 0; z-index: 1000;
+        }
+
+        /* ── CHAT: Messenger-style ── */
         .chat-modal-body {
             height: 500px;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
+        /* The scrollable message area */
         .chat-container {
-            flex: 1 1 auto;
+            flex: 1 1 0;          /* takes all available height, allows shrink */
             overflow-y: auto;
             padding: 16px;
             background: var(--messenger-bg);
             display: flex;
-            flex-direction: column;   /* top→bottom natural order */
-            gap: 4px;
+            flex-direction: column; /* top→bottom: oldest at top, newest at bottom */
         }
-        /* spacer pushes first messages down when there are only a few */
-        .chat-spacer { flex: 1 1 auto; }
+        /* Pushes bubbles to the bottom when there are few messages (like Messenger) */
+        .chat-spacer { flex: 1 1 auto; min-height: 0; }
 
         .msg-bubble {
-            padding: 10px 16px;
-            border-radius: 18px;
-            font-size: 0.9rem;
-            max-width: 75%;
-            word-break: break-word;
-            flex-shrink: 0;
+            padding: 10px 16px; border-radius: 18px;
+            font-size: 0.9rem; max-width: 75%;
+            margin-bottom: 8px; word-break: break-word;
+            flex-shrink: 0; /* prevent bubbles from squishing */
         }
-        .own  { align-self: flex-end;  background: var(--messenger-blue); color: white; border-bottom-right-radius: 4px; }
+        .own    { align-self: flex-end;   background: var(--messenger-blue); color: white; border-bottom-right-radius: 4px; }
         .theirs { align-self: flex-start; background: white; color: black; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+        /* input bar never shrinks */
+        .chat-input-bar { flex-shrink: 0; padding: 12px 16px; background: white; border-top: 1px solid #e5e7eb; }
 
         /* Notification Bell */
         .notif-bell { position: relative; cursor: pointer; }
@@ -70,8 +78,8 @@
             display: flex; align-items: center; justify-content: center; font-weight: 700;
         }
         .notif-dropdown {
-            position: absolute; right: 0; top: 40px;
-            width: 320px; background: white; border-radius: 16px;
+            position: absolute; right: 0; top: 40px; width: 320px;
+            background: white; border-radius: 16px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.15); z-index: 9000;
             display: none; overflow: hidden;
         }
@@ -97,24 +105,25 @@
         /* File Attachment Thumbnail */
         .attachment-wrap {
             display: inline-flex; flex-direction: column; align-items: center;
-            cursor: pointer; margin-bottom: 12px;
+            cursor: pointer; margin-bottom: 12px; margin-right: 8px;
         }
         .attachment-thumb {
             width: 80px; height: 80px; border-radius: 12px;
-            border: 2px solid #e5e7eb; object-fit: cover;
-            transition: border-color 0.2s;
+            border: 2px solid #e5e7eb; object-fit: cover; transition: border-color 0.2s;
         }
-        .attachment-wrap:hover .attachment-thumb { border-color: #3b82f6; }
+        .attachment-wrap:hover .attachment-thumb,
+        .attachment-wrap:hover .attachment-icon-box { border-color: #3b82f6; }
         .attachment-icon-box {
             width: 80px; height: 80px; border-radius: 12px;
             border: 2px solid #e5e7eb; background: #f8fafc;
             display: flex; align-items: center; justify-content: center;
             font-size: 2rem; transition: border-color 0.2s, background 0.2s;
         }
-        .attachment-wrap:hover .attachment-icon-box { border-color: #3b82f6; background: #eff6ff; }
+        .attachment-wrap:hover .attachment-icon-box { background: #eff6ff; }
         .attachment-label {
             font-size: 0.65rem; color: #6b7280; margin-top: 4px;
-            max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
+            max-width: 80px; overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; text-align: center;
         }
 
         /* Lightbox */
@@ -125,20 +134,20 @@
         }
         #lightboxOverlay.show { display: flex; }
         #lightboxClose {
-            position: absolute; top: 18px; right: 22px;
-            color: white; font-size: 2.2rem; cursor: pointer; line-height: 1; z-index: 2;
+            position: absolute; top: 18px; right: 24px;
+            color: white; font-size: 2.4rem; cursor: pointer; line-height: 1;
         }
-        #lightboxImg { max-width: 88vw; max-height: 72vh; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        #lightboxImg { max-width: 88vw; max-height: 70vh; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
         #lightboxIconBig { font-size: 6rem; }
-        #lightboxName { color: #d1d5db; font-size: 0.82rem; margin-top: 10px; }
+        #lightboxName { color: #d1d5db; font-size: 0.82rem; margin-top: 10px; text-align: center; max-width: 80vw; word-break: break-all; }
         .lightbox-actions { display: flex; gap: 12px; margin-top: 16px; }
         .lb-btn {
             color: white; border: none; border-radius: 20px;
-            padding: 8px 22px; font-weight: 600; font-size: 0.88rem;
+            padding: 9px 24px; font-weight: 600; font-size: 0.88rem;
             cursor: pointer; display: flex; align-items: center; gap: 7px;
         }
-        #lbViewBtn  { background: #3b82f6; }
-        #lbDlBtn    { background: #10b981; }
+        #lbViewBtn { background: #3b82f6; }
+        #lbDlBtn   { background: #10b981; }
     </style>
 </head>
 <body>
@@ -157,8 +166,12 @@
     <div id="lightboxIconBig" style="display:none;"></div>
     <div id="lightboxName"></div>
     <div class="lightbox-actions">
-        <button class="lb-btn" id="lbViewBtn" onclick="lbOpen()"><i class="bi bi-eye-fill"></i> View</button>
-        <button class="lb-btn" id="lbDlBtn"   onclick="lbDownload()"><i class="bi bi-download"></i> Download</button>
+        <button class="lb-btn" id="lbViewBtn" onclick="lbOpen()">
+            <i class="bi bi-eye-fill"></i> View
+        </button>
+        <button class="lb-btn" id="lbDlBtn" onclick="lbDownload()">
+            <i class="bi bi-download"></i> Download
+        </button>
     </div>
 </div>
 
@@ -220,172 +233,224 @@
 <script>
 const API_URL = "https://taskflow-api.jcpanganiban1.workers.dev";
 
-let session       = JSON.parse(localStorage.getItem('office_session')),
-    globalData    = { tasks:[], comments:[], users:[], notifications:[] },
-    activeTaskId  = null,
-    lastDataHash  = "",
-    lastNotifCount= 0,
-    lbFileUrl     = "",
-    lbFileName    = "";
+let session        = JSON.parse(localStorage.getItem('office_session')),
+    globalData     = { tasks:[], comments:[], users:[], notifications:[] },
+    activeTaskId   = null,
+    lastDataHash   = "",
+    lastNotifCount = 0;
+
+// Store file data safely in JS — avoids any HTML attribute escaping issues
+const fileMap = {}; // fileMap[taskId] = { url, name }
 
 if (!session) window.location.href = "index.html";
 
-function showLoader(v){ document.getElementById('globalLoader').style.display = v?'flex':'none'; }
-function logout(){ localStorage.clear(); window.location.href="index.html"; }
+function showLoader(v) { document.getElementById('globalLoader').style.display = v ? 'flex' : 'none'; }
+function logout() { localStorage.clear(); window.location.href = "index.html"; }
 
 /* ── LIGHTBOX ── */
-function openLightbox(url, name){
-    lbFileUrl  = url;
-    lbFileName = name || "attachment";
+// Called with taskId (safe integer/string), looks up URL from fileMap
+function openLightbox(taskId) {
+    const file = fileMap[taskId];
+    if (!file) return;
+
+    const url  = file.url;
+    const name = file.name;
 
     const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url);
     const ext     = url.split('.').pop().split('?')[0].toLowerCase();
-    const iconMap = {pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📑',pptx:'📑',zip:'🗜️',txt:'📃'};
+    const iconMap = { pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📑', pptx:'📑', zip:'🗜️', txt:'📃' };
 
     const img  = document.getElementById('lightboxImg');
     const icon = document.getElementById('lightboxIconBig');
 
-    if(isImage){
-        img.src          = url;
-        img.style.display= 'block';
-        icon.style.display='none';
+    if (isImage) {
+        img.src = url;
+        img.style.display  = 'block';
+        icon.style.display = 'none';
     } else {
-        img.style.display ='none';
-        icon.innerHTML    = iconMap[ext] || '📎';
-        icon.style.display='block';
+        img.style.display  = 'none';
+        icon.innerHTML     = iconMap[ext] || '📎';
+        icon.style.display = 'block';
     }
-    document.getElementById('lightboxName').innerText = lbFileName;
-    document.getElementById('lightboxOverlay').classList.add('show');
+
+    document.getElementById('lightboxName').innerText = name;
+
+    // Store on overlay element so lbOpen/lbDownload can read it
+    const overlay = document.getElementById('lightboxOverlay');
+    overlay.dataset.url  = url;
+    overlay.dataset.name = name;
+    overlay.classList.add('show');
 }
-function closeLightbox(){ document.getElementById('lightboxOverlay').classList.remove('show'); }
-/* clicking outside the content closes */
-document.getElementById('lightboxOverlay').addEventListener('click', function(e){
-    if(e.target === this) closeLightbox();
+
+function closeLightbox() {
+    document.getElementById('lightboxOverlay').classList.remove('show');
+}
+
+// Close when clicking the dark backdrop (not the content)
+document.getElementById('lightboxOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeLightbox();
 });
-/* open in new tab — works even for CORS-protected files */
-function lbOpen(){ window.open(lbFileUrl, '_blank'); }
-/* force download via fetch blob — fallback to new tab if blocked */
-async function lbDownload(){
+
+function lbOpen() {
+    const url = document.getElementById('lightboxOverlay').dataset.url;
+    window.open(url, '_blank');
+}
+
+async function lbDownload() {
+    const overlay = document.getElementById('lightboxOverlay');
+    const url  = overlay.dataset.url;
+    const name = overlay.dataset.name;
     try {
-        const resp = await fetch(lbFileUrl);
+        // Try fetch → blob → anchor download
+        const resp = await fetch(url, { mode: 'cors' });
+        if (!resp.ok) throw new Error('fetch failed');
         const blob = await resp.blob();
-        const a    = document.createElement('a');
-        a.href     = URL.createObjectURL(blob);
-        a.download = lbFileName;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = name;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
-    } catch(e){
-        /* CORS blocked — open in new tab so user can save manually */
-        window.open(lbFileUrl, '_blank');
+    } catch (e) {
+        // CORS blocked or network error — open in new tab, user can save from there
+        window.open(url, '_blank');
     }
 }
 
 /* ── NOTIFICATIONS ── */
-function toggleNotifDropdown(){ document.getElementById('notifDropdown').classList.toggle('show'); }
-document.addEventListener('click', function(e){
+function toggleNotifDropdown() {
+    document.getElementById('notifDropdown').classList.toggle('show');
+}
+
+document.addEventListener('click', function(e) {
     const bell = document.querySelector('.notif-bell');
-    if(bell && !bell.contains(e.target)) document.getElementById('notifDropdown').classList.remove('show');
+    if (bell && !bell.contains(e.target)) {
+        document.getElementById('notifDropdown').classList.remove('show');
+    }
 });
-function renderNotifications(notifications){
-    const unread = notifications.filter(n=>n.IsRead==='FALSE');
+
+function renderNotifications(notifications) {
+    const unread = notifications.filter(n => n.IsRead === 'FALSE');
     const badge  = document.getElementById('notifBadge');
-    if(unread.length){ badge.style.display='flex'; badge.innerText=unread.length>9?'9+':unread.length; }
-    else badge.style.display='none';
-    if(lastNotifCount>0 && unread.length>lastNotifCount) showToast(notifications[0].Message, notifications[0].Type);
-    lastNotifCount=unread.length;
-    const list=document.getElementById('notifList');
-    list.innerHTML = notifications.length===0
+    if (unread.length) {
+        badge.style.display = 'flex';
+        badge.innerText = unread.length > 9 ? '9+' : unread.length;
+    } else {
+        badge.style.display = 'none';
+    }
+    if (lastNotifCount > 0 && unread.length > lastNotifCount) {
+        showToast(notifications[0].Message, notifications[0].Type);
+    }
+    lastNotifCount = unread.length;
+    const list = document.getElementById('notifList');
+    list.innerHTML = notifications.length === 0
         ? '<div class="text-center text-muted small py-4">No notifications yet</div>'
-        : notifications.map(n=>`
-            <div class="notif-item ${n.IsRead==='FALSE'?'unread':''}">
+        : notifications.map(n => `
+            <div class="notif-item ${n.IsRead === 'FALSE' ? 'unread' : ''}">
                 <div>${n.Message}</div>
                 <div class="notif-time">${new Date(n.CreatedAt).toLocaleString()}</div>
             </div>`).join('');
 }
-function showToast(message,type='info'){
-    const c=document.getElementById('toastContainer');
-    const t=document.createElement('div');
-    t.className=`toast-notif ${type}`;
-    t.innerHTML=`<i class="bi bi-${type==='chat'?'chat-fill text-primary':'clipboard-check-fill'} fs-5"></i>
-        <div><div class="fw-bold small">${type==='chat'?'New Message':'New Task'}</div>
-        <div style="font-size:0.78rem;color:#6b7280;">${message}</div></div>`;
-    c.appendChild(t); setTimeout(()=>t.remove(),5000);
+
+function showToast(message, type = 'info') {
+    const c = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = `toast-notif ${type}`;
+    t.innerHTML = `
+        <i class="bi bi-${type === 'chat' ? 'chat-fill text-primary' : 'clipboard-check-fill'} fs-5"></i>
+        <div>
+            <div class="fw-bold small">${type === 'chat' ? 'New Message' : 'New Task'}</div>
+            <div style="font-size:0.78rem;color:#6b7280;">${message}</div>
+        </div>`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 5000);
 }
-async function markAllRead(){
-    await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"MARK_NOTIFICATIONS_READ",userId:session.ID})});
+
+async function markAllRead() {
+    await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: "MARK_NOTIFICATIONS_READ", userId: session.ID })
+    });
     await sync();
     document.getElementById('notifDropdown').classList.remove('show');
 }
 
 /* ── PRESENCE ── */
-async function updatePresence(status){
+async function updatePresence(status) {
     showLoader(true);
-    try{ await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"UPDATE_PRESENCE",userId:session.ID,status})}); }
-    catch(e){ console.error("Presence sync failed"); }
-    finally{ showLoader(false); }
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "UPDATE_PRESENCE", userId: session.ID, status })
+        });
+    } catch (e) { console.error("Presence sync failed"); }
+    finally { showLoader(false); }
 }
 
 /* ── SYNC ── */
-async function sync(isAuto=false){
-    try{
-        const res    = await fetch(`${API_URL}?userId=${session.ID}`);
-        const newData= await res.json();
-        const myTasks= newData.tasks.filter(t=>String(t.EmployeeID)===String(session.ID));
-        const newHash= JSON.stringify(myTasks)+JSON.stringify(newData.comments)+JSON.stringify(newData.notifications);
-        if(newHash===lastDataHash && isAuto) return;
+async function sync(isAuto = false) {
+    try {
+        const res     = await fetch(`${API_URL}?userId=${session.ID}`);
+        const newData = await res.json();
+        const myTasks = newData.tasks.filter(t => String(t.EmployeeID) === String(session.ID));
+        const newHash = JSON.stringify(myTasks) + JSON.stringify(newData.comments) + JSON.stringify(newData.notifications);
+        if (newHash === lastDataHash && isAuto) return;
         globalData   = newData;
         lastDataHash = newHash;
-        const me = globalData.users.find(u=>String(u.ID)===String(session.ID));
-        if(me && me.Status) document.getElementById('presenceToggle').value=me.Status;
+        const me = globalData.users.find(u => String(u.ID) === String(session.ID));
+        if (me && me.Status) document.getElementById('presenceToggle').value = me.Status;
         renderTasks(myTasks);
-        renderNotifications(newData.notifications||[]);
-        if(activeTaskId) renderComments();
-    } catch(e){ console.error("Sync failed",e); }
+        renderNotifications(newData.notifications || []);
+        if (activeTaskId) renderComments();
+    } catch (e) { console.error("Sync failed", e); }
 }
 
 /* ── RENDER TASKS ── */
-function buildThumb(fileLink){
-    if(!fileLink) return '';
+function buildThumb(task) {
+    const fileLink = task.FileLink;
+    if (!fileLink) return '';
+
+    // Store file data in JS map keyed by taskId — safe, no HTML escaping needed
+    const name = decodeURIComponent(fileLink.split('/').pop().split('?')[0]) || 'attachment';
+    fileMap[task.TaskID] = { url: fileLink, name };
+
     const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(fileLink);
     const ext     = fileLink.split('.').pop().split('?')[0].toLowerCase();
-    const iconMap = {pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📑',pptx:'📑',zip:'🗜️',txt:'📃'};
-    const name    = decodeURIComponent(fileLink.split('/').pop().split('?')[0]);
-    const safe    = fileLink.replace(/'/g,"\\'");
-    const safeName= name.replace(/'/g,"\\'");
+    const iconMap = { pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📑', pptx:'📑', zip:'🗜️', txt:'📃' };
 
-    if(isImage){
-        return `<div class="attachment-wrap" onclick="openLightbox('${safe}','${safeName}')">
-                    <img class="attachment-thumb" src="${safe}" alt="attachment"
-                         onerror="this.parentElement.querySelector('.attachment-icon-box') && void 0;
-                                  this.style.display='none';
-                                  this.nextElementSibling.style.display='flex';">
-                    <div class="attachment-icon-box" style="display:none;">🖼️</div>
-                    <div class="attachment-label">${name}</div>
-                </div>`;
-    }
-    return `<div class="attachment-wrap" onclick="openLightbox('${safe}','${safeName}')">
-                <div class="attachment-icon-box">${iconMap[ext]||'📎'}</div>
-                <div class="attachment-label">${name}</div>
-            </div>`;
+    const inner = isImage
+        ? `<img class="attachment-thumb" src="${fileLink}" alt="attachment"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+           <div class="attachment-icon-box" style="display:none;">🖼️</div>`
+        : `<div class="attachment-icon-box">${iconMap[ext] || '📎'}</div>`;
+
+    return `
+        <div class="attachment-wrap" onclick="openLightbox(${JSON.stringify(String(task.TaskID))})">
+            ${inner}
+            <div class="attachment-label">${name}</div>
+        </div>`;
 }
 
-function renderTasks(myTasks){
-    const feed       = document.getElementById('taskFeed');
-    const activeTasks= myTasks.filter(t=>String(t.Archived).toUpperCase()!=='TRUE');
-    if(!activeTasks.length){ feed.innerHTML='<div class="text-center py-5 text-muted">No active tasks.</div>'; return; }
-
-    const priorityBadge={Urgent:'danger',High:'warning',Medium:'info',Low:'secondary',Normal:'success'};
-    feed.innerHTML = activeTasks.slice().reverse().map(t=>{
+function renderTasks(myTasks) {
+    const feed        = document.getElementById('taskFeed');
+    const activeTasks = myTasks.filter(t => String(t.Archived).toUpperCase() !== "TRUE");
+    if (!activeTasks.length) {
+        feed.innerHTML = '<div class="text-center py-5 text-muted">No active tasks.</div>';
+        return;
+    }
+    const priorityBadge = { Urgent:'danger', High:'warning', Medium:'info', Low:'secondary', Normal:'success' };
+    feed.innerHTML = activeTasks.slice().reverse().map(t => {
         const deadlineHtml = t.Deadline ? `
             <div class="d-flex align-items-center gap-1 mb-2">
                 <i class="bi bi-clock text-danger" style="font-size:0.8rem;"></i>
                 <small class="text-danger fw-bold">Due: ${new Date(t.Deadline).toLocaleString()}</small>
             </div>` : '';
-        const pc   = priorityBadge[t.Priority]||'success';
-        const catH = t.Category?`<span class="badge bg-light text-dark border me-1"><i class="bi bi-tag me-1"></i>${t.Category}</span>`:'';
-        const priH = t.Priority?`<span class="badge bg-${pc} bg-opacity-10 text-${pc} border border-${pc}"><i class="bi bi-flag me-1"></i>${t.Priority}</span>`:'';
-
-        return `<div class="col-12"><div class="task-card">
+        const pc   = priorityBadge[t.Priority] || 'success';
+        const catH = t.Category ? `<span class="badge bg-light text-dark border me-1"><i class="bi bi-tag me-1"></i>${t.Category}</span>` : '';
+        const priH = t.Priority ? `<span class="badge bg-${pc} bg-opacity-10 text-${pc} border border-${pc}"><i class="bi bi-flag me-1"></i>${t.Priority}</span>` : '';
+        return `
+        <div class="col-12"><div class="task-card">
             <div class="d-flex justify-content-between mb-2">
                 <span class="status-pill status-${t.Status.toLowerCase()}">${t.Status}</span>
                 <small class="text-muted">#${t.TaskID}</small>
@@ -394,86 +459,104 @@ function renderTasks(myTasks){
             <h5 class="fw-bold">${t.Title}</h5>
             <p class="text-muted small">${t.Instructions}</p>
             ${deadlineHtml}
-            ${buildThumb(t.FileLink)}
+            ${buildThumb(t)}
             <div class="d-flex gap-2">
-                ${t.Status==='Assigned'?`<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}','Received')" class="btn btn-primary w-100 rounded-pill fw-bold">Accept</button>`:''}
-                ${t.Status==='Received'?`<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}','Completed')" class="btn btn-success w-100 rounded-pill fw-bold">Complete</button>`:''}
-                ${t.Status==='Completed'?`<button class="btn btn-light w-100 rounded-pill fw-bold" disabled>Finished</button>`:''}
-                <button onclick="openChat('${t.TaskID}','${t.Title}')" class="btn btn-dark rounded-pill px-3"><i class="bi bi-chat-text-fill"></i></button>
+                ${t.Status === 'Assigned'   ? `<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}','Received')"  class="btn btn-primary w-100 rounded-pill fw-bold">Accept</button>`   : ''}
+                ${t.Status === 'Received'   ? `<button id="btn-${t.TaskID}" onclick="updateTaskStatus('${t.TaskID}','Completed')" class="btn btn-success w-100 rounded-pill fw-bold">Complete</button>` : ''}
+                ${t.Status === 'Completed'  ? `<button class="btn btn-light w-100 rounded-pill fw-bold" disabled>Finished</button>` : ''}
+                <button onclick="openChat('${t.TaskID}','${t.Title.replace(/'/g,"\\'")}')
+" class="btn btn-dark rounded-pill px-3"><i class="bi bi-chat-text-fill"></i></button>
             </div>
         </div></div>`;
     }).join('');
 }
 
 /* ── TASK STATUS ── */
-async function updateTaskStatus(taskId,status){
-    const btn=document.getElementById(`btn-${taskId}`);
-    btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-btn"></span>';
+async function updateTaskStatus(taskId, status) {
+    const btn = document.getElementById(`btn-${taskId}`);
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
     showLoader(true);
-    await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"SET_STATUS",taskId,status})});
-    await sync(); showLoader(false);
+    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SET_STATUS", taskId, status }) });
+    await sync();
+    showLoader(false);
 }
 
 /* ── CHAT ── */
-function openChat(taskId,title){
-    activeTaskId=taskId;
-    document.getElementById('chatTitle').innerText=title;
+function openChat(taskId, title) {
+    activeTaskId = taskId;
+    document.getElementById('chatTitle').innerText = title;
     renderComments();
     new bootstrap.Modal(document.getElementById('chatModal')).show();
 }
 
-/*  KEY FIX:
-    - flex-direction: column  →  items flow top → bottom (oldest first)
-    - .chat-spacer fills empty space so first messages sit at bottom (like Messenger)
-    - scrollTop = scrollHeight scrolls to the very last message                       */
-function renderComments(){
+function renderComments() {
     const container = document.getElementById('chatBody');
-    const comments  = globalData.comments.filter(c=>
-        String(c.TaskID)===String(activeTaskId) &&
-        !String(c.HiddenBy||'').includes(session.ID)
+    const comments  = globalData.comments.filter(c =>
+        String(c.TaskID) === String(activeTaskId) &&
+        !String(c.HiddenBy || '').includes(session.ID)
     );
-    const bubbles = comments.map(c=>
-        `<div class="msg-bubble ${c.SenderName===session.Name?'own':'theirs'}">${c.Message}</div>`
-    ).join('');
+
+    // Build bubble HTML separately — no nesting issues
+    let bubblesHtml = '';
+    if (comments.length === 0) {
+        bubblesHtml = '<div class="text-center text-muted small py-3">Start the conversation...</div>';
+    } else {
+        // comments array is already oldest-first from the API
+        // flex-direction:column renders them top→bottom = oldest at top, newest at bottom ✓
+        bubblesHtml = comments.map(c =>
+            `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`
+        ).join('');
+    }
 
     container.innerHTML = `
         <div class="chat-container" id="chatScroll">
             <div class="chat-spacer"></div>
-            ${bubbles || '<div class="text-center text-muted small py-3">Start the conversation...</div>'}
+            ${bubblesHtml}
         </div>
-        <div class="p-3 bg-white border-top" style="flex-shrink:0;">
+        <div class="chat-input-bar">
             <div class="input-group">
-                <input type="text" id="chatInp" class="form-control border-0 bg-light rounded-pill px-3"
-                       placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg()">
+                <input type="text" id="chatInp"
+                    class="form-control border-0 bg-light rounded-pill px-3"
+                    placeholder="Aa"
+                    onkeypress="if(event.key==='Enter') sendMsg()">
                 <button id="sendBtn" class="btn btn-primary rounded-circle ms-2" onclick="sendMsg()">
                     <i class="bi bi-send-fill"></i>
                 </button>
             </div>
         </div>`;
 
-    /* scroll to bottom after paint */
-    requestAnimationFrame(()=>{
-        const s=document.getElementById('chatScroll');
-        if(s) s.scrollTop=s.scrollHeight;
+    // Defer scroll until after browser paints the new DOM
+    // This is the fix for scrollTop returning stale height synchronously
+    requestAnimationFrame(() => {
+        const s = document.getElementById('chatScroll');
+        if (s) s.scrollTop = s.scrollHeight;
     });
 }
 
-async function sendMsg(){
-    const inp=document.getElementById('chatInp');
-    if(!inp.value.trim()) return;
-    const btn=document.getElementById('sendBtn');
-    btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-btn"></span>';
-    await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"ADD_COMMENT",taskId:activeTaskId,sender:session.Name,message:inp.value})});
+async function sendMsg() {
+    const inp = document.getElementById('chatInp');
+    if (!inp.value.trim()) return;
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
+    await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value })
+    });
     await sync();
-    inp.value=''; btn.disabled=false; btn.innerHTML='<i class="bi bi-send-fill"></i>';
+    inp.value = '';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-send-fill"></i>';
 }
 
-window.onload=()=>{
-    document.getElementById('userName').innerText  =session.Name;
-    document.getElementById('userOffice').innerText=session.Office;
+window.onload = () => {
+    document.getElementById('userName').innerText   = session.Name;
+    document.getElementById('userOffice').innerText = session.Office;
     sync();
 };
-setInterval(()=>sync(true),15000);
+
+setInterval(() => sync(true), 15000);
 </script>
 </body>
 </html>
