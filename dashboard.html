@@ -42,8 +42,6 @@
             display: flex;
             flex-direction: column;
         }
-        /* Pushes bubbles to the bottom when few messages exist.
-           No min-height override — flex-grow must be free to work. */
         .chat-spacer { flex: 1 1 auto; }
 
         .msg-bubble {
@@ -197,9 +195,8 @@ let session        = JSON.parse(localStorage.getItem('office_session')),
     globalData     = { tasks:[], comments:[], users:[], notifications:[] },
     activeTaskId   = null,
     lastDataHash   = "",
-    lastNotifCount = -1; // -1 so first sync sets baseline without firing toasts
+    lastNotifCount = -1;
 
-// File data stored in JS — URLs never put into HTML attributes (avoids escaping bugs)
 const fileMap = {};
 
 if (!session) window.location.href = "index.html";
@@ -255,7 +252,6 @@ async function lbDownload() {
         document.body.appendChild(a); a.click();
         document.body.removeChild(a); URL.revokeObjectURL(a.href);
     } catch(e) {
-        // CORS blocked — open in new tab so user can save manually
         window.open(url, '_blank');
     }
 }
@@ -341,7 +337,6 @@ function buildThumb(task) {
     const url  = task.FileLink;
     const name = decodeURIComponent(url.split('?')[0].split('/').pop()) || 'attachment';
 
-    // Store in JS map — only the taskId (simple number) goes into the HTML onclick
     fileMap[String(task.TaskID)] = { url, name };
 
     const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url);
@@ -371,7 +366,6 @@ function renderTasks(myTasks) {
         const pc  = pb[t.Priority] || 'success';
         const cat = t.Category ? `<span class="badge bg-light text-dark border me-1"><i class="bi bi-tag me-1"></i>${t.Category}</span>` : '';
         const pri = t.Priority ? `<span class="badge bg-${pc} bg-opacity-10 text-${pc} border border-${pc}"><i class="bi bi-flag me-1"></i>${t.Priority}</span>` : '';
-        // Escape backslashes first, then single quotes for safe inline onclick
         const safeTitle = t.Title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         return `
         <div class="col-12"><div class="task-card">
@@ -412,6 +406,13 @@ function openChat(taskId, title) {
     new bootstrap.Modal(document.getElementById('chatModal')).show();
 }
 
+function scrollToBottom() {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        const s = document.getElementById('chatScroll');
+        if (s) s.scrollTop = s.scrollHeight;
+    }));
+}
+
 function renderComments() {
     const container = document.getElementById('chatBody');
     const comments  = globalData.comments.filter(c =>
@@ -419,8 +420,6 @@ function renderComments() {
         !String(c.HiddenBy || '').includes(session.ID)
     );
 
-    // API returns comments oldest-first. flex-direction:column renders them
-    // top→bottom. chat-spacer pushes them to the bottom when few messages exist.
     const bubbles = comments.length
         ? comments.map(c =>
             `<div class="msg-bubble ${c.SenderName === session.Name ? 'own' : 'theirs'}">${c.Message}</div>`
@@ -442,11 +441,7 @@ function renderComments() {
             </div>
         </div>`;
 
-    // Deferred scroll — browser must paint new DOM before scrollHeight is accurate
-    requestAnimationFrame(() => {
-        const s = document.getElementById('chatScroll');
-        if (s) s.scrollTop = s.scrollHeight;
-    });
+    scrollToBottom();
 }
 
 async function sendMsg() {
@@ -457,6 +452,7 @@ async function sendMsg() {
     await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value }) });
     await sync();
     inp.value = ''; btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>';
+    inp.focus();
 }
 
 window.onload = () => {
