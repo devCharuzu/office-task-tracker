@@ -1,4 +1,4 @@
-const API_URL = "https://taskflow-api.[yourname].workers.dev";
+const API_URL = "https://taskflow-api.jcpanganiban1.workers.dev";
 
 let AppData = { 
     tasks: [], 
