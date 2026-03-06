@@ -75,6 +75,26 @@
         .toast-notif.chat { border-left-color: #0084ff; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+        /* File Thumbnail */
+        .attachment-wrap { display: inline-flex; flex-direction: column; align-items: center; cursor: pointer; margin-bottom: 12px; margin-right: 8px; }
+        .attachment-thumb { width: 80px; height: 80px; border-radius: 12px; border: 2px solid #e5e7eb; object-fit: cover; transition: border-color 0.2s; }
+        .attachment-wrap:hover .attachment-thumb, .attachment-wrap:hover .attachment-icon-box { border-color: #3b82f6; }
+        .attachment-icon-box { width: 80px; height: 80px; border-radius: 12px; border: 2px solid #e5e7eb; background: #f8fafc; display: flex; align-items: center; justify-content: center; font-size: 2rem; transition: border-color 0.2s; }
+        .attachment-wrap:hover .attachment-icon-box { background: #eff6ff; }
+        .attachment-label { font-size: 0.65rem; color: #6b7280; margin-top: 4px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+
+        /* Lightbox */
+        #lightboxOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 99999; flex-direction: column; align-items: center; justify-content: center; }
+        #lightboxOverlay.show { display: flex; }
+        #lightboxClose { position: absolute; top: 18px; right: 24px; color: white; font-size: 2.4rem; cursor: pointer; line-height: 1; }
+        #lightboxImg { max-width: 88vw; max-height: 70vh; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        #lightboxIconBig { font-size: 6rem; }
+        #lightboxName { color: #d1d5db; font-size: 0.82rem; margin-top: 10px; text-align: center; max-width: 80vw; word-break: break-all; }
+        .lightbox-actions { display: flex; gap: 12px; margin-top: 16px; }
+        .lb-btn { color: white; border: none; border-radius: 20px; padding: 9px 24px; font-weight: 600; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 7px; }
+        #lbViewBtn { background: #3b82f6; }
+        #lbDlBtn { background: #10b981; }
+
         @media (max-width: 767px) {
             .sidebar { display: none !important; }
             .mobile-nav {
@@ -97,6 +117,18 @@
 </div>
 
 <div class="toast-container-custom" id="toastContainer"></div>
+
+<!-- Lightbox -->
+<div id="lightboxOverlay">
+    <span id="lightboxClose" onclick="closeLightbox()">&times;</span>
+    <img id="lightboxImg" src="" alt="Preview" style="display:none;">
+    <div id="lightboxIconBig" style="display:none;"></div>
+    <div id="lightboxName"></div>
+    <div class="lightbox-actions">
+        <button class="lb-btn" id="lbViewBtn" onclick="lbOpen()"><i class="bi bi-eye-fill"></i> View</button>
+        <button class="lb-btn" id="lbDlBtn" onclick="lbDownload()"><i class="bi bi-download"></i> Download</button>
+    </div>
+</div>
 
 <aside class="sidebar">
     <div class="fw-bold fs-5 mb-5 text-primary"><i class="bi bi-shield-lock-fill"></i> Director Panel</div>
@@ -260,11 +292,68 @@
 
     if (!session || session.Role !== "Director") window.location.href = "index.html";
 
+    // File map — stores {url, name} keyed by taskId
+    const fileMap = {};
+
     function showLoader(show) {
         document.getElementById('globalLoader').style.display = show ? 'flex' : 'none';
     }
 
     function logout() { localStorage.clear(); window.location.href = "index.html"; }
+
+    /* ── LIGHTBOX ── */
+    function openLightbox(taskId) {
+        const file = fileMap[String(taskId)];
+        if (!file) return;
+        const url = file.url, name = file.name;
+        const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url);
+        const ext = url.split('?')[0].split('.').pop().toLowerCase();
+        const iconMap = { pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📑', pptx:'📑', zip:'🗜️', txt:'📃' };
+        const img = document.getElementById('lightboxImg');
+        const icon = document.getElementById('lightboxIconBig');
+        if (isImage) { img.src = url; img.style.display = 'block'; icon.style.display = 'none'; }
+        else { img.style.display = 'none'; icon.innerHTML = iconMap[ext] || '📎'; icon.style.display = 'block'; }
+        document.getElementById('lightboxName').innerText = name;
+        const overlay = document.getElementById('lightboxOverlay');
+        overlay.dataset.url = url; overlay.dataset.name = name;
+        overlay.classList.add('show');
+    }
+
+    function closeLightbox() { document.getElementById('lightboxOverlay').classList.remove('show'); }
+
+    document.getElementById('lightboxOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeLightbox();
+    });
+
+    function lbOpen() { window.open(document.getElementById('lightboxOverlay').dataset.url, '_blank'); }
+
+    async function lbDownload() {
+        const overlay = document.getElementById('lightboxOverlay');
+        const url = overlay.dataset.url, name = overlay.dataset.name;
+        try {
+            const resp = await fetch(url, { mode: 'cors' });
+            if (!resp.ok) throw new Error('failed');
+            const blob = await resp.blob();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = name;
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(a.href);
+        } catch(e) { window.open(url, '_blank'); }
+    }
+
+    function buildThumb(task) {
+        if (!task.FileLink) return '';
+        const url = task.FileLink;
+        const name = decodeURIComponent(url.split('?')[0].split('/').pop()) || 'attachment';
+        fileMap[String(task.TaskID)] = { url, name };
+        const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url);
+        const ext = url.split('?')[0].split('.').pop().toLowerCase();
+        const iconMap = { pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📑', pptx:'📑', zip:'🗜️', txt:'📃' };
+        const inner = isImage
+            ? `<img class="attachment-thumb" src="${url}" alt="file" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="attachment-icon-box" style="display:none;">🖼️</div>`
+            : `<div class="attachment-icon-box">${iconMap[ext] || '📎'}</div>`;
+        return `<div class="attachment-wrap" onclick="openLightbox('${task.TaskID}')">${inner}<div class="attachment-label">${name}</div></div>`;
+    }
 
     // --- NOTIFICATIONS ---
     function toggleNotifDropdown() {
@@ -383,14 +472,15 @@
             const deadlineHtml = t.Deadline ? `<br><small class="text-danger"><i class="bi bi-clock me-1"></i>Due: ${new Date(t.Deadline).toLocaleString()}</small>` : '';
             const priorityHtml = t.Priority ? `<span class="badge bg-${priorityColor} bg-opacity-10 text-${priorityColor} border border-${priorityColor} ms-1" style="font-size:0.6rem;">${t.Priority}</span>` : '';
             const categoryHtml = t.Category ? `<span class="badge bg-light text-dark border ms-1" style="font-size:0.6rem;">${t.Category}</span>` : '';
-            const fileIcon = t.FileLink ? `<a href="${t.FileLink}" target="_blank" class="text-primary ms-2"><i class="bi bi-paperclip"></i></a>` : '';
+            const thumbHtml = buildThumb(t);
             const safeTitle = t.Title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             return `
             <tr class="border-bottom">
                 <td class="py-3">
-                    <b>${t.EmployeeName}</b> ${fileIcon}<br>
+                    <b>${t.EmployeeName}</b><br>
                     <small class="text-muted">${t.Title}</small>
                     ${categoryHtml}${priorityHtml}${deadlineHtml}
+                    ${thumbHtml ? '<br>' + thumbHtml : ''}
                 </td>
                 <td><span class="status-pill bg-${t.Status.toLowerCase()}">${t.Status}</span></td>
                 <td class="text-end">
