@@ -334,25 +334,20 @@ async function sync(isAuto = false) {
 /* ── RENDER TASKS + FILE THUMBNAILS ── */
 function buildThumb(task) {
     if (!task.FileLink) return '';
-    const url  = task.FileLink;
-    const name = decodeURIComponent(url.split('?')[0].split('/').pop()) || 'attachment';
+    const urls = task.FileLink.split('|').filter(Boolean);
+    const iconMap = { pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📑', pptx:'📑', zip:'🗜️', txt:'📃', mp4:'🎬', mp3:'🎵', mov:'🎬', avi:'🎬', csv:'📊' };
 
-    fileMap[String(task.TaskID)] = { url, name };
-
-    const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url);
-    const ext     = url.split('?')[0].split('.').pop().toLowerCase();
-    const iconMap = { pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📑', pptx:'📑', zip:'🗜️', txt:'📃' };
-
-    const inner = isImage
-        ? `<img class="attachment-thumb" src="${url}" alt="file"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-           <div class="attachment-icon-box" style="display:none;">🖼️</div>`
-        : `<div class="attachment-icon-box">${iconMap[ext] || '📎'}</div>`;
-
-    return `<div class="attachment-wrap" onclick="openLightbox('${task.TaskID}')">
-                ${inner}
-                <div class="attachment-label">${name}</div>
-            </div>`;
+    return urls.map((url, i) => {
+        const name = decodeURIComponent(url.split('?')[0].split('/').pop()) || 'attachment';
+        const key = `${task.TaskID}_${i}`;
+        fileMap[key] = { url, name };
+        const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url);
+        const ext = url.split('?')[0].split('.').pop().toLowerCase();
+        const inner = isImage
+            ? `<img class="attachment-thumb" src="${url}" alt="file" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="attachment-icon-box" style="display:none;">🖼️</div>`
+            : `<div class="attachment-icon-box">${iconMap[ext] || '📎'}</div>`;
+        return `<div class="attachment-wrap" onclick="openLightbox('${key}')">${inner}<div class="attachment-label">${name}</div></div>`;
+    }).join('');
 }
 
 function renderTasks(myTasks) {
