@@ -499,7 +499,7 @@
 
     function renderComments() {
         const container = document.getElementById('chatBody');
-        const comments = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
+        const comments = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId)).slice().reverse();
 
         const bubbles = comments.length
             ? comments.map(c =>
@@ -521,6 +521,10 @@
                 </div>
             </div>`;
 
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            const s = document.getElementById('chatScroll');
+            if (s) s.scrollTop = s.scrollHeight;
+        }));
 }
 
     async function sendMsg() {
