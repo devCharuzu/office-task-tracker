@@ -42,6 +42,13 @@
         .own { align-self: flex-end; background: var(--messenger-blue); color: white; border-bottom-right-radius: 4px; }
         .theirs { align-self: flex-start; background: white; color: black; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .chat-input-bar { flex-shrink: 0; padding: 12px 16px; background: white; border-top: 1px solid #e5e7eb; }
+        .chat-attach-preview { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px 0; background: white; }
+        .chat-attach-item { position: relative; display: inline-flex; flex-direction: column; align-items: center; }
+        .chat-attach-item .remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+        .chat-file-bubble { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.2); border-radius: 10px; padding: 6px 10px; margin-top: 6px; cursor: pointer; }
+        .chat-file-bubble:hover { background: rgba(255,255,255,0.35); }
+        .chat-file-bubble.theirs-file { background: #f3f4f6; color: #111; }
+        .chat-file-bubble.theirs-file:hover { background: #e5e7eb; }
         .spinner-btn { width: 1rem; height: 1rem; border-width: 0.15em; }
 
         .notif-bell { position: relative; cursor: pointer; }
@@ -595,15 +602,45 @@
         }));
     }
 
+    function parseMsg(raw) {
+        try { const p = JSON.parse(raw); if (p.files !== undefined) return p; } catch(e) {}
+        return { text: raw, files: '' };
+    }
+
+    function buildChatFileBubble(filesStr, side, keyPrefix) {
+        if (!filesStr) return '';
+        return filesStr.split('|').filter(Boolean).map((url, i) => {
+            const name = decodeURIComponent(url.split('?')[0].split('/').pop()) || 'file';
+            const key = `chat_${keyPrefix}_${i}`;
+            fileMap[key] = { url, name };
+            const isImage = /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url);
+            const ext = url.split('?')[0].split('.').pop().toLowerCase();
+            const iconMap = { pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📑', pptx:'📑', zip:'🗜️', txt:'📃', mp4:'🎬', mp3:'🎵', mov:'🎬', avi:'🎬', csv:'📊' };
+            if (isImage) {
+                return `<div onclick="openLightbox('${key}')" style="cursor:pointer;margin-top:6px;"><img src="${url}" style="max-width:180px;max-height:180px;border-radius:10px;display:block;" onerror="this.style.display='none'"></div>`;
+            }
+            return `<div class="chat-file-bubble ${side === 'own' ? '' : 'theirs-file'}" onclick="openLightbox('${key}')">
+                <span style="font-size:1.2rem;">${iconMap[ext] || '📎'}</span>
+                <span style="font-size:0.78rem;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</span>
+                <i class="bi bi-download" style="font-size:0.75rem;opacity:0.7;"></i>
+            </div>`;
+        }).join('');
+    }
+
+    let chatFiles = [];
+
     function renderComments() {
         const container = document.getElementById('chatBody');
         const comments = globalData.comments.filter(c => String(c.TaskID) === String(activeTaskId));
 
         const bubbles = comments.length
-            ? comments.map(c => {
+            ? comments.map((c, i) => {
                 const time = c.TimeStamp ? new Date(c.TimeStamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
                 const side = c.SenderName === session.Name ? 'own' : 'theirs';
-                return `<div class="msg-bubble ${side}">${c.Message}<div style="font-size:0.65rem;opacity:0.7;margin-top:4px;text-align:${side === 'own' ? 'right' : 'left'}">${time}</div></div>`;
+                const parsed = parseMsg(c.Message);
+                const fileBubbles = buildChatFileBubble(parsed.files, side, `${activeTaskId}_${i}`);
+                const textHtml = parsed.text ? `<div>${parsed.text}</div>` : '';
+                return `<div class="msg-bubble ${side}">${textHtml}${fileBubbles}<div style="font-size:0.65rem;opacity:0.7;margin-top:4px;text-align:${side === 'own' ? 'right' : 'left'}">${time}</div></div>`;
               }).join('')
             : '<div class="text-center text-muted small py-3" style="align-self:center;">Start the conversation...</div>';
 
@@ -611,8 +648,13 @@
             <div class="chat-container" id="chatScroll">
                 ${bubbles}
             </div>
+            <div id="chatAttachPreview" class="chat-attach-preview"></div>
             <div class="chat-input-bar">
                 <div class="input-group">
+                    <label class="btn btn-light rounded-circle me-1 mb-0" style="cursor:pointer;" title="Attach file">
+                        <i class="bi bi-paperclip"></i>
+                        <input type="file" id="chatFileInp" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.mp4,.mp3,.mov,.avi,.csv" style="display:none;" onchange="onChatFileSelect(this)">
+                    </label>
                     <input type="text" id="chatInp" class="form-control border-0 bg-light rounded-pill px-3"
                         placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg()">
                     <button id="sendBtn" class="btn btn-primary rounded-circle ms-2" onclick="sendMsg()">
@@ -621,20 +663,52 @@
                 </div>
             </div>`;
 
+        chatFiles = [];
         requestAnimationFrame(() => requestAnimationFrame(() => {
             const s = document.getElementById('chatScroll');
             if (s) s.scrollTop = s.scrollHeight;
         }));
-}
+    }
+
+    function onChatFileSelect(input) {
+        Array.from(input.files).forEach(f => chatFiles.push(f));
+        renderChatAttachPreview();
+        input.value = '';
+    }
+
+    function renderChatAttachPreview() {
+        const preview = document.getElementById('chatAttachPreview');
+        if (!preview) return;
+        if (!chatFiles.length) { preview.innerHTML = ''; return; }
+        preview.innerHTML = chatFiles.map((f, i) => {
+            const icon = f.type.startsWith('image/') ? '🖼️' : '📎';
+            return `<div class="chat-attach-item">
+                <div style="background:#f3f4f6;border-radius:8px;padding:4px 8px;font-size:0.72rem;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${icon} ${f.name}</div>
+                <button class="remove-btn" onclick="removeChatFile(${i})">×</button>
+            </div>`;
+        }).join('');
+    }
+
+    function removeChatFile(i) {
+        chatFiles.splice(i, 1);
+        renderChatAttachPreview();
+    }
 
     async function sendMsg() {
         const inp = document.getElementById('chatInp');
-        if (!inp.value.trim()) return;
+        const text = inp.value.trim();
+        if (!text && chatFiles.length === 0) return;
         const btn = document.getElementById('sendBtn');
         btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-btn"></span>';
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: inp.value }) });
+
+        const files = await Promise.all(chatFiles.map(f =>
+            new Promise(r => { const rd = new FileReader(); rd.onload = () => r({ name: f.name, data: rd.result.split(',')[1] }); rd.readAsDataURL(f); })
+        ));
+
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "ADD_COMMENT", taskId: activeTaskId, sender: session.Name, message: text, files }) });
         await refresh();
-        inp.value = ""; btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>';
+        inp.value = ""; chatFiles = [];
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>';
         inp.focus();
     }
 
